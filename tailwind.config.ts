@@ -23,38 +23,34 @@ export default {
 				display: ['Playfair Display', 'serif'],
 			},
 			colors: {
-				border: 'hsl(var(--border))',
-				input: 'hsl(var(--input))',
-				ring: 'hsl(var(--ring))',
-				background: 'hsl(var(--background))',
-				foreground: 'hsl(var(--foreground))',
+				border: 'hsl(30, 20%, 85%)', // Soft warm gray border
+				input: 'hsl(30, 20%, 90%)', // Lighter input background
+				ring: 'hsl(30, 70%, 50%)', // Warm orange accent
+				background: 'hsl(30, 30%, 98%)', // Very light warm background
+				foreground: 'hsl(20, 14%, 20%)', // Dark brown text for contrast
 				primary: {
-					DEFAULT: 'hsl(var(--primary))',
-					foreground: 'hsl(var(--primary-foreground))'
+					DEFAULT: 'hsl(30, 70%, 45%)', // Warm amber
+					foreground: 'hsl(0, 0%, 100%)' // White text on primary
 				},
 				secondary: {
-					DEFAULT: 'hsl(var(--secondary))',
-					foreground: 'hsl(var(--secondary-foreground))'
-				},
-				destructive: {
-					DEFAULT: 'hsl(var(--destructive))',
-					foreground: 'hsl(var(--destructive-foreground))'
+					DEFAULT: 'hsl(30, 20%, 95%)', // Very light warm gray
+					foreground: 'hsl(20, 14%, 30%)' // Slightly lighter text
 				},
 				muted: {
-					DEFAULT: 'hsl(var(--muted))',
-					foreground: 'hsl(var(--muted-foreground))'
+					DEFAULT: 'hsl(30, 20%, 90%)', // Light warm gray
+					foreground: 'hsl(20, 14%, 45%)' // Muted text color
 				},
 				accent: {
-					DEFAULT: 'hsl(var(--accent))',
-					foreground: 'hsl(var(--accent-foreground))'
-				},
-				popover: {
-					DEFAULT: 'hsl(var(--popover))',
-					foreground: 'hsl(var(--popover-foreground))'
+					DEFAULT: 'hsl(30, 80%, 95%)', // Very light warm accent
+					foreground: 'hsl(30, 70%, 40%)' // Accent text color
 				},
 				card: {
-					DEFAULT: 'hsl(var(--card))',
-					foreground: 'hsl(var(--card-foreground))'
+					DEFAULT: 'hsl(30, 30%, 100%)', // Pure white card background
+					foreground: 'hsl(20, 14%, 10%)' // Almost black text
+				},
+				destructive: {
+					DEFAULT: 'hsl(0, 84%, 60%)', // Bright red for errors
+					foreground: 'hsl(0, 0%, 98%)' // White text on destructive
 				},
 				amber: {
 					50: '#fffbeb',

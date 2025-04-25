@@ -7,112 +7,51 @@
 
 @layer base {
   :root {
-    --background: 33 33% 98%;
+    --background: 30 30% 98%;
     --foreground: 20 14% 4%;
-
     --card: 0 0% 100%;
     --card-foreground: 20 14% 4%;
-
     --popover: 0 0% 100%;
     --popover-foreground: 20 14% 4%;
-
-    --primary: 30 83% 45%;
+    --primary: 30 70% 45%;
     --primary-foreground: 0 0% 100%;
-
-    --secondary: 60 10% 95%;
+    --secondary: 30 20% 95%;
     --secondary-foreground: 24 10% 10%;
-
-    --muted: 60 10% 95%;
+    --muted: 30 20% 90%;
     --muted-foreground: 25 5% 45%;
-
-    --accent: 28 80% 95%;
+    --accent: 30 80% 95%;
     --accent-foreground: 28 80% 40%;
-
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
-
-    --border: 20 5% 90%;
-    --input: 20 5% 90%;
-    --ring: 30 83% 45%;
-
+    --border: 30 20% 85%;
+    --input: 30 20% 90%;
+    --ring: 30 70% 50%;
     --radius: 0.5rem;
   }
 
-  .dark {
-    --background: 20 14% 4%;
-    --foreground: 60 10% 98%;
-
-    --card: 20 14% 4%;
-    --card-foreground: 60 10% 98%;
-
-    --popover: 20 14% 4%;
-    --popover-foreground: 60 10% 98%;
-
-    --primary: 30 70% 45%;
-    --primary-foreground: 60 10% 98%;
-
-    --secondary: 12 6% 15%;
-    --secondary-foreground: 60 10% 98%;
-
-    --muted: 12 6% 15%;
-    --muted-foreground: 24 5% 65%;
-
-    --accent: 28 80% 15%;
-    --accent-foreground: 28 80% 90%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-
-    --border: 12 6% 15%;
-    --input: 12 6% 15%;
-    --ring: 30 70% 45%;
-  }
-}
-
-@layer base {
-  * {
-    @apply border-border;
-  }
-
   body {
-    @apply bg-background text-foreground font-sans;
+    @apply bg-background text-foreground font-sans antialiased;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    @apply font-display;
+    @apply font-display text-foreground leading-tight;
   }
 }
 
 @layer components {
+  .page-title {
+    @apply text-4xl md:text-5xl font-display font-semibold mb-6 text-center text-primary;
+  }
+
+  .section-title {
+    @apply text-3xl md:text-4xl font-display font-medium mb-6 text-foreground;
+  }
+
   .art-card {
     @apply rounded-xl overflow-hidden bg-card shadow-lg hover:shadow-xl transition-all duration-300 border border-border;
   }
   
   .btn-primary {
     @apply bg-primary hover:bg-primary/90 text-primary-foreground px-6 py-2 rounded-md transition-colors;
-  }
-  
-  .btn-secondary {
-    @apply bg-secondary hover:bg-secondary/90 text-secondary-foreground px-6 py-2 rounded-md transition-colors;
-  }
-  
-  .section-container {
-    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12;
-  }
-  
-  .page-title {
-    @apply text-4xl md:text-5xl font-display font-semibold mb-6 text-center;
-  }
-  
-  .section-title {
-    @apply text-3xl md:text-4xl font-display font-medium mb-6;
-  }
-
-  .dashboard-card {
-    @apply p-6 rounded-xl bg-card shadow-md border border-border hover:shadow-lg transition-all;
-  }
-
-  .form-input {
-    @apply w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2;
   }
 }
