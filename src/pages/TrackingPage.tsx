@@ -1,41 +1,20 @@
 
-import { useState } from "react";
+import { useLocation } from "react-router-dom";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { 
-  Card, 
-  CardContent,
-  CardDescription,
-  CardFooter, 
-  CardHeader, 
-  CardTitle 
-} from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Check, X, Clock, CalendarDays } from "lucide-react";
-import { useToast } from "@/components/ui/use-toast";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { toast } from "sonner";
 
-// Mock data for tracking
-const mockBookings = [
-  {
-    id: "WS-2025-042",
-    name: "Иванова Анна",
-    workshop: "Акварельный пейзаж",
-    date: "30 апреля, 15:00",
-    status: "confirmed",
-    paid: true
-  },
-  {
-    id: "WS-2025-057",
-    name: "Петров Сергей",
-    workshop: "Масляная живопись",
-    date: "2 мая, 18:00",
-    status: "pending",
-    paid: false
-  }
-];
+// Определяем перечисление для статусов бронирования
+enum BookingStatus {
+  PENDING = "pending",
+  CONFIRMED = "confirmed",
+  COMPLETED = "completed",
+  CANCELLED = "cancelled"
+}
 
-type BookingStatus = "confirmed" | "pending" | "cancelled";
-
+// Определяем интерфейс для типа бронирования
 interface Booking {
   id: string;
   name: string;
@@ -46,162 +25,163 @@ interface Booking {
 }
 
 export default function TrackingPage() {
-  const [trackingId, setTrackingId] = useState("");
+  const [orderNumber, setOrderNumber] = useState("");
   const [booking, setBooking] = useState<Booking | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const { toast } = useToast();
-  
-  const handleTrackingSubmit = () => {
-    if (!trackingId) {
-      toast({
-        title: "Ошибка",
-        description: "Пожалуйста, введите номер заявки",
-        variant: "destructive",
-      });
+  const location = useLocation();
+
+  useEffect(() => {
+    // Проверяем, есть ли id в URL параметрах
+    const params = new URLSearchParams(location.search);
+    const id = params.get("id");
+    if (id) {
+      setOrderNumber(id);
+      handleTrack(id);
+    }
+  }, [location]);
+
+  const handleTrack = (id: string = orderNumber) => {
+    if (!id.trim()) {
+      toast.error("Пожалуйста, введите номер заказа или бронирования");
       return;
     }
-    
+
     setIsLoading(true);
-    
-    // Simulating API call with timeout
+
+    // Имитация API запроса
     setTimeout(() => {
-      const foundBooking = mockBookings.find(b => b.id === trackingId);
-      
-      if (foundBooking) {
-        setBooking(foundBooking);
-      } else {
-        toast({
-          title: "Заявка не найдена",
-          description: "Проверьте правильность введенного номера",
-          variant: "destructive",
+      // Мок данные бронирования
+      if (id === "WS123") {
+        setBooking({
+          id: "WS123",
+          name: "Иванова Анна",
+          workshop: "Масляная живопись для начинающих",
+          date: "15 мая 2025, 18:00",
+          status: BookingStatus.CONFIRMED,
+          paid: true
         });
+        toast.success("Информация о бронировании найдена");
+      } else if (id === "WS124") {
+        setBooking({
+          id: "WS124",
+          name: "Петров Сергей",
+          workshop: "Акварельный скетчинг",
+          date: "20 мая 2025, 16:00",
+          status: BookingStatus.PENDING,
+          paid: false
+        });
+        toast.success("Информация о бронировании найдена");
+      } else {
+        setBooking(null);
+        toast.error("Бронирование не найдено");
       }
-      
       setIsLoading(false);
-    }, 800);
-  };
-  
-  const getStatusInfo = (status: BookingStatus) => {
-    switch (status) {
-      case "confirmed":
-        return {
-          label: "Подтверждена",
-          color: "bg-green-100 text-green-800",
-          icon: <Check className="h-4 w-4" />,
-          description: "Ваша заявка подтверждена. Ждем вас на мастер-классе!"
-        };
-      case "pending":
-        return {
-          label: "В обработке",
-          color: "bg-yellow-100 text-yellow-800",
-          icon: <Clock className="h-4 w-4" />,
-          description: "Ваша заявка находится в обработке. Мы свяжемся с вами в ближайшее время."
-        };
-      case "cancelled":
-        return {
-          label: "Отменена",
-          color: "bg-red-100 text-red-800",
-          icon: <X className="h-4 w-4" />,
-          description: "Ваша заявка отменена."
-        };
-      default:
-        return {
-          label: "Неизвестно",
-          color: "bg-gray-100 text-gray-800",
-          icon: null,
-          description: ""
-        };
-    }
-  };
-  
-  const getPaymentStatus = (isPaid: boolean) => {
-    return isPaid
-      ? { label: "Оплачено", color: "bg-green-100 text-green-800" }
-      : { label: "Не оплачено", color: "bg-gray-100 text-gray-800" };
+    }, 1000);
   };
 
   return (
     <div className="section-container">
-      <h1 className="page-title">Отслеживание заявки</h1>
+      <h1 className="page-title">Отслеживание бронирования</h1>
       
-      <div className="max-w-2xl mx-auto">
-        <div className="bg-white p-6 rounded-xl shadow-sm">
-          <div className="mb-6">
-            <p className="text-lg mb-4">
-              Введите номер вашей заявки, чтобы проверить её статус
-            </p>
-            <div className="flex gap-4">
-              <Input
-                placeholder="Например: WS-2025-042"
-                value={trackingId}
-                onChange={(e) => setTrackingId(e.target.value)}
-              />
-              <Button onClick={handleTrackingSubmit} disabled={isLoading}>
-                {isLoading ? "Проверка..." : "Проверить"}
-              </Button>
-            </div>
-            <div className="text-sm text-gray-500 mt-2">
-              * Номер заявки был отправлен на ваш email после оформления
-            </div>
-          </div>
-          
-          {/* Sample tracking numbers */}
-          <div className="bg-studio-50 p-4 rounded-lg text-sm">
-            <p className="font-medium mb-2">Тестовые номера заявок:</p>
-            <p>WS-2025-042 - подтвержденная заявка</p>
-            <p>WS-2025-057 - заявка в обработке</p>
-          </div>
+      <div className="max-w-2xl mx-auto mb-10">
+        <div className="flex gap-4">
+          <Input
+            value={orderNumber}
+            onChange={(e) => setOrderNumber(e.target.value)}
+            placeholder="Введите номер бронирования"
+            className="flex-1"
+          />
+          <Button onClick={() => handleTrack()} disabled={isLoading}>
+            {isLoading ? "Поиск..." : "Проверить"}
+          </Button>
         </div>
         
-        {booking && (
-          <Card className="mt-8 animate-fade-in">
-            <CardHeader>
-              <div className="flex justify-between items-center">
-                <div>
-                  <CardTitle className="text-xl">Заявка №{booking.id}</CardTitle>
-                  <CardDescription>{booking.name}</CardDescription>
-                </div>
-                
-                {booking.status && (
-                  <Badge className={getStatusInfo(booking.status).color}>
-                    <span className="flex items-center">
-                      {getStatusInfo(booking.status).icon}
-                      <span className="ml-1">{getStatusInfo(booking.status).label}</span>
-                    </span>
-                  </Badge>
-                )}
+        <p className="text-sm text-muted-foreground mt-2">
+          Введите номер бронирования, полученный при оформлении заказа или записи на мастер-класс.
+        </p>
+      </div>
+
+      {booking && (
+        <div className="max-w-3xl mx-auto bg-card rounded-xl p-6 shadow-md">
+          <h2 className="text-2xl font-display mb-4">Информация о бронировании</h2>
+
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[150px]">Номер</TableHead>
+                <TableHead>Имя</TableHead>
+                <TableHead>Мастер-класс</TableHead>
+                <TableHead>Дата и время</TableHead>
+                <TableHead>Статус</TableHead>
+                <TableHead>Оплата</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <TableRow>
+                <TableCell className="font-medium">{booking.id}</TableCell>
+                <TableCell>{booking.name}</TableCell>
+                <TableCell>{booking.workshop}</TableCell>
+                <TableCell>{booking.date}</TableCell>
+                <TableCell>
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                    booking.status === BookingStatus.CONFIRMED ? 'bg-green-100 text-green-800' : 
+                    booking.status === BookingStatus.PENDING ? 'bg-yellow-100 text-yellow-800' :
+                    booking.status === BookingStatus.COMPLETED ? 'bg-blue-100 text-blue-800' :
+                    'bg-red-100 text-red-800'
+                  }`}>
+                    {booking.status === BookingStatus.CONFIRMED ? 'Подтверждено' : 
+                     booking.status === BookingStatus.PENDING ? 'Ожидает подтверждения' :
+                     booking.status === BookingStatus.COMPLETED ? 'Завершено' : 
+                     'Отменено'}
+                  </span>
+                </TableCell>
+                <TableCell>
+                  {booking.paid ? 
+                    <span className="text-green-600 font-medium">Оплачено</span> : 
+                    <span className="text-red-600 font-medium">Не оплачено</span>}
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+
+          <div className="mt-6">
+            <h3 className="text-lg font-semibold mb-2">Статус вашего бронирования</h3>
+            <div className="relative">
+              <div className="flex justify-between mb-1">
+                <div className="text-sm">Заявка</div>
+                <div className="text-sm">Подтверждение</div>
+                <div className="text-sm">Проведение</div>
+                <div className="text-sm">Завершено</div>
               </div>
-            </CardHeader>
-            
-            <CardContent className="space-y-4">
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h3 className="font-medium text-lg">{booking.workshop}</h3>
-                <div className="flex items-center mt-2 text-gray-700">
-                  <CalendarDays className="h-5 w-5 mr-2" />
-                  <span>{booking.date}</span>
-                </div>
+              <div className="h-2 bg-muted rounded overflow-hidden">
+                <div 
+                  className="h-full bg-primary" 
+                  style={{ 
+                    width: booking.status === BookingStatus.PENDING ? '25%' : 
+                           booking.status === BookingStatus.CONFIRMED ? '50%' : 
+                           booking.status === BookingStatus.COMPLETED ? '100%' : '0%' 
+                  }}
+                ></div>
               </div>
-              
-              <div>
-                <p className="text-gray-700">{getStatusInfo(booking.status).description}</p>
-              </div>
-              
-              <div className="flex justify-between items-center">
-                <span className="font-medium">Статус оплаты:</span>
-                <Badge className={getPaymentStatus(booking.paid).color}>
-                  {getPaymentStatus(booking.paid).label}
-                </Badge>
-              </div>
-            </CardContent>
-            
-            <CardFooter className="border-t pt-4">
-              <div className="w-full flex justify-end space-x-2">
-                <Button variant="outline">Распечатать</Button>
-                {!booking.paid && <Button>Оплатить заявку</Button>}
-              </div>
-            </CardFooter>
-          </Card>
-        )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {!booking && !isLoading && orderNumber && (
+        <div className="max-w-md mx-auto text-center p-6 bg-muted rounded-lg">
+          <h3 className="text-lg font-semibold">Бронирование не найдено</h3>
+          <p className="mt-2">Проверьте правильность введенного номера или свяжитесь с нами для помощи.</p>
+        </div>
+      )}
+
+      <div className="mt-16 max-w-2xl mx-auto text-center">
+        <h2 className="text-2xl font-display mb-4">Нужна помощь?</h2>
+        <p className="mb-6">Если у вас возникли вопросы по вашему бронированию, свяжитесь с нами:</p>
+        <div className="flex justify-center space-x-6">
+          <Button variant="outline">По телефону</Button>
+          <Button variant="outline">По электронной почте</Button>
+        </div>
       </div>
     </div>
   );
