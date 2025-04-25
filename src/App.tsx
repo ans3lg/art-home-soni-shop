@@ -12,6 +12,9 @@ import WorkshopsPage from "./pages/WorkshopsPage";
 import TrackingPage from "./pages/TrackingPage";
 import AboutPage from "./pages/AboutPage";
 import CartPage from "./pages/CartPage";
+import AccountPage from "./pages/AccountPage";
+import OrderHistoryPage from "./pages/OrderHistoryPage";
+import AdminPanelPage from "./pages/AdminPanelPage";
 import NotFoundPage from "./pages/NotFoundPage";
 
 const queryClient = new QueryClient();
@@ -31,6 +34,9 @@ const App = () => (
               <Route path="tracking" element={<TrackingPage />} />
               <Route path="about" element={<AboutPage />} />
               <Route path="cart" element={<CartPage />} />
+              <Route path="account" element={<AccountPage />} />
+              <Route path="orders" element={<OrderHistoryPage />} />
+              <Route path="admin" element={<AdminPanelPage />} />
               <Route path="*" element={<NotFoundPage />} />
             </Route>
           </Routes>
