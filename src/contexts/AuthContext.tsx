@@ -1,24 +1,27 @@
 
-import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
-import { api } from '@/services/api';
-import { useToast } from '@/components/ui/use-toast';
+import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { api } from "@/services/api";
 
 interface User {
   id: string;
-  email: string;
   name: string;
-  role: 'user' | 'admin';
+  email: string;
+  role: string;
+  phone?: string;
+  address?: string;
 }
 
 interface AuthContextType {
   user: User | null;
   token: string | null;
+  loading: boolean;
+  error: string | null;
   isAuthenticated: boolean;
   isAdmin: boolean;
-  isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (name: string, email: string, password: string) => Promise<void>;
   logout: () => void;
+  updateProfile: (profileData: Partial<User>) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -26,109 +29,119 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
-  const [isLoading, setIsLoading] = useState(true);
-  const { toast } = useToast();
-
-  // Check if user is authenticated on mount
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  
+  const isAuthenticated = !!token;
+  const isAdmin = user?.role === 'admin';
+  
   useEffect(() => {
-    const checkAuth = async () => {
-      if (token) {
+    const initAuth = async () => {
+      const storedToken = localStorage.getItem('token');
+      
+      if (storedToken) {
+        setToken(storedToken);
         try {
-          const userData = await api.getCurrentUser(token);
+          const userData = await api.getCurrentUser(storedToken);
           setUser(userData);
         } catch (error) {
-          console.error('Authentication error:', error);
-          // Clear invalid token
+          console.error('Failed to get current user:', error);
           localStorage.removeItem('token');
           setToken(null);
-          setUser(null);
         }
       }
-      setIsLoading(false);
+      
+      setLoading(false);
     };
-
-    checkAuth();
-  }, [token]);
-
-  // Login function
+    
+    initAuth();
+  }, []);
+  
   const login = async (email: string, password: string) => {
     try {
-      setIsLoading(true);
+      setLoading(true);
+      setError(null);
+      
       const { token, user } = await api.login(email, password);
+      
       localStorage.setItem('token', token);
       setToken(token);
       setUser(user);
-      toast({
-        title: 'Вход выполнен',
-        description: `Добро пожаловать, ${user.name}!`,
-      });
-    } catch (error) {
-      console.error('Login error:', error);
-      toast({
-        title: 'Ошибка входа',
-        description: error instanceof Error ? error.message : 'Проверьте ваши данные и попробуйте снова',
-        variant: 'destructive',
-      });
+    } catch (error: any) {
+      setError(error.message || 'Ошибка при входе');
       throw error;
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
-
-  // Register function
+  
   const register = async (name: string, email: string, password: string) => {
     try {
-      setIsLoading(true);
+      setLoading(true);
+      setError(null);
+      
       const { token, user } = await api.register(name, email, password);
+      
       localStorage.setItem('token', token);
       setToken(token);
       setUser(user);
-      toast({
-        title: 'Регистрация успешна',
-        description: `Аккаунт создан. Добро пожаловать, ${name}!`,
-      });
-    } catch (error) {
-      console.error('Registration error:', error);
-      toast({
-        title: 'Ошибка регистрации',
-        description: error instanceof Error ? error.message : 'Пользователь с таким email уже существует',
-        variant: 'destructive',
-      });
+    } catch (error: any) {
+      setError(error.message || 'Ошибка при регистрации');
       throw error;
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
-
-  // Logout function
+  
   const logout = () => {
     localStorage.removeItem('token');
     setToken(null);
     setUser(null);
-    toast({
-      title: 'Выход выполнен',
-      description: 'Вы вышли из аккаунта',
-    });
   };
-
-  const value = {
-    user,
-    token,
-    isAuthenticated: !!user,
-    isAdmin: user?.role === 'admin',
-    isLoading,
-    login,
-    register,
-    logout,
+  
+  const updateProfile = async (profileData: Partial<User>) => {
+    try {
+      if (!token) throw new Error('Не авторизован');
+      
+      setLoading(true);
+      setError(null);
+      
+      const updatedUser = await api.updateProfile(profileData, token);
+      setUser(prevUser => ({ ...prevUser!, ...updatedUser }));
+      
+      return updatedUser;
+    } catch (error: any) {
+      setError(error.message || 'Ошибка при обновлении профиля');
+      throw error;
+    } finally {
+      setLoading(false);
+    }
   };
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  
+  return (
+    <AuthContext.Provider
+      value={{
+        user,
+        token,
+        loading,
+        error,
+        isAuthenticated,
+        isAdmin,
+        login,
+        register,
+        logout,
+        updateProfile
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
 };
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 };

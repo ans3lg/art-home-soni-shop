@@ -4,25 +4,50 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Minus, Plus, X, ShoppingBag } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "@/contexts/CartContext";
+import { useAuth } from "@/contexts/AuthContext";
+import { api } from "@/services/api";
+import { 
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 
 export default function CartPage() {
   const [deliveryMethod, setDeliveryMethod] = useState("courier");
   const [promoCode, setPromoCode] = useState("");
   const [isApplyingPromo, setIsApplyingPromo] = useState(false);
   const [discount, setDiscount] = useState(0);
-  const { toast } = useToast();
-  const { items, updateQuantity, removeItem, getTotal } = useCart();
+  const [checkoutDialogOpen, setCheckoutDialogOpen] = useState(false);
+  const [isCheckingOut, setIsCheckingOut] = useState(false);
+  const [checkoutInfo, setCheckoutInfo] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    address: "",
+    city: "",
+    postalCode: "",
+    comment: ""
+  });
   
-  const handleUpdateQuantity = (id: number, delta: number) => {
+  const { toast } = useToast();
+  const { items, updateQuantity, removeItem, getTotal, clearCart, isLoading } = useCart();
+  const { user, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+  
+  const handleUpdateQuantity = (id: string, delta: number) => {
     const item = items.find(item => item.id === id);
     if (item) {
       updateQuantity(id, item.quantity + delta);
     }
   };
   
-  const handleRemoveItem = (id: number, title: string) => {
+  const handleRemoveItem = (id: string, title: string) => {
     removeItem(id);
     toast({
       title: "Товар удален",
@@ -30,7 +55,7 @@ export default function CartPage() {
     });
   };
   
-  const handleApplyPromoCode = () => {
+  const handleApplyPromoCode = async () => {
     if (!promoCode) {
       toast({
         title: "Ошибка",
@@ -42,29 +67,110 @@ export default function CartPage() {
     
     setIsApplyingPromo(true);
     
-    // Simulate API call
-    setTimeout(() => {
-      if (promoCode.toLowerCase() === "art10") {
-        const newDiscount = Math.round(subtotal * 0.1);
-        setDiscount(newDiscount);
-        toast({
-          title: "Промокод применен",
-          description: `Скидка ${formatPrice(newDiscount)} применена к заказу`,
-        });
-      } else {
-        toast({
-          title: "Неверный промокод",
-          description: "Введенный промокод не найден или срок его действия истек",
-          variant: "destructive",
-        });
-      }
+    try {
+      const result = await api.verifyPromoCode(promoCode);
+      const newDiscount = Math.round(subtotal * (result.discountPercent / 100));
+      setDiscount(newDiscount);
       
+      toast({
+        title: "Промокод применен",
+        description: `Скидка ${formatPrice(newDiscount)} (${result.discountPercent}%) применена к заказу`,
+      });
+    } catch (error) {
+      toast({
+        title: "Неверный промокод",
+        description: "Введенный промокод не найден или срок его действия истек",
+        variant: "destructive",
+      });
+    } finally {
       setIsApplyingPromo(false);
-    }, 800);
+    }
   };
   
   const formatPrice = (price: number) => {
     return price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ") + " ₽";
+  };
+  
+  const openCheckoutDialog = () => {
+    if (!isAuthenticated) {
+      toast({
+        title: "Необходима авторизация",
+        description: "Для оформления заказа необходимо войти в систему",
+        variant: "destructive",
+      });
+      navigate('/auth', { state: { from: '/cart' } });
+      return;
+    }
+    
+    if (user) {
+      setCheckoutInfo({
+        ...checkoutInfo,
+        name: user.name || "",
+        email: user.email || "",
+        phone: user.phone || "",
+        address: user.address || ""
+      });
+    }
+    
+    setCheckoutDialogOpen(true);
+  };
+  
+  const handleCheckout = async () => {
+    try {
+      setIsCheckingOut(true);
+      
+      const { name, email, phone, address, city, postalCode, comment } = checkoutInfo;
+      
+      if (!name || !email || !phone || !address) {
+        toast({
+          title: "Заполните обязательные поля",
+          description: "Имя, email, телефон и адрес обязательны для заполнения",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      const orderData = {
+        items: items.map(item => ({
+          ...item,
+          productId: item.productId,
+          itemType: item.itemType
+        })),
+        total: total,
+        customerName: name,
+        customerEmail: email,
+        customerPhone: phone,
+        address,
+        city,
+        postalCode,
+        comment,
+        promoCode: discount > 0 ? promoCode : undefined,
+        deliveryMethod
+      };
+      
+      // Создаем заказ
+      await api.createOrder(orderData, user ? user.token : undefined);
+      
+      // Очищаем корзину
+      await clearCart();
+      
+      toast({
+        title: "Заказ оформлен",
+        description: "Спасибо за заказ! Мы свяжемся с вами в ближайшее время.",
+      });
+      
+      setCheckoutDialogOpen(false);
+      navigate('/');
+    } catch (error) {
+      console.error('Error creating order:', error);
+      toast({
+        title: "Ошибка",
+        description: "Не удалось оформить заказ. Пожалуйста, попробуйте еще раз.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCheckingOut(false);
+    }
   };
   
   // Calculate totals
@@ -96,13 +202,16 @@ export default function CartPage() {
                     
                     <div className="flex-grow">
                       <h3 className="font-medium">{item.title}</h3>
-                      <p className="text-gray-600 text-sm">Картина, холст</p>
+                      <p className="text-gray-600 text-sm">
+                        {item.itemType === 'Painting' ? 'Картина, холст' : 'Мастер-класс'}
+                      </p>
                     </div>
                     
                     <div className="flex items-center space-x-3">
                       <button 
                         className="h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center"
                         onClick={() => handleUpdateQuantity(item.id, -1)}
+                        disabled={isLoading}
                       >
                         <Minus className="h-4 w-4" />
                       </button>
@@ -110,6 +219,7 @@ export default function CartPage() {
                       <button 
                         className="h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center"
                         onClick={() => handleUpdateQuantity(item.id, 1)}
+                        disabled={isLoading}
                       >
                         <Plus className="h-4 w-4" />
                       </button>
@@ -123,6 +233,7 @@ export default function CartPage() {
                       className="text-gray-400 hover:text-red-500 transition-colors"
                       onClick={() => handleRemoveItem(item.id, item.title)}
                       aria-label="Удалить"
+                      disabled={isLoading}
                     >
                       <X className="h-5 w-5" />
                     </button>
@@ -183,6 +294,7 @@ export default function CartPage() {
                       placeholder="Промокод"
                       value={promoCode}
                       onChange={(e) => setPromoCode(e.target.value)}
+                      disabled={isApplyingPromo}
                     />
                     <Button 
                       variant="outline" 
@@ -209,7 +321,12 @@ export default function CartPage() {
                   </div>
                 </div>
                 
-                <Button className="w-full mt-4" size="lg">
+                <Button 
+                  className="w-full mt-4" 
+                  size="lg"
+                  onClick={openCheckoutDialog}
+                  disabled={isLoading}
+                >
                   Оформить заказ
                 </Button>
               </div>
@@ -219,7 +336,7 @@ export default function CartPage() {
       ) : (
         <div className="text-center py-16 bg-white rounded-xl shadow-sm">
           <div className="flex justify-center mb-4">
-            <span className="h-20 w-20 rounded-full bg-studio-100 text-studio-600 flex items-center justify-center">
+            <span className="h-20 w-20 rounded-full bg-gray-100 text-gray-500 flex items-center justify-center">
               <ShoppingBag className="h-10 w-10" />
             </span>
           </div>
@@ -230,6 +347,122 @@ export default function CartPage() {
           </Button>
         </div>
       )}
+      
+      {/* Checkout Dialog */}
+      <Dialog open={checkoutDialogOpen} onOpenChange={setCheckoutDialogOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Оформление заказа</DialogTitle>
+            <DialogDescription>
+              Заполните информацию для доставки заказа
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label htmlFor="name" className="text-sm font-medium">
+                  Имя*
+                </label>
+                <Input
+                  id="name"
+                  value={checkoutInfo.name}
+                  onChange={(e) => setCheckoutInfo({ ...checkoutInfo, name: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <label htmlFor="email" className="text-sm font-medium">
+                  Email*
+                </label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={checkoutInfo.email}
+                  onChange={(e) => setCheckoutInfo({ ...checkoutInfo, email: e.target.value })}
+                  required
+                />
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label htmlFor="phone" className="text-sm font-medium">
+                  Телефон*
+                </label>
+                <Input
+                  id="phone"
+                  value={checkoutInfo.phone}
+                  onChange={(e) => setCheckoutInfo({ ...checkoutInfo, phone: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <label htmlFor="city" className="text-sm font-medium">
+                  Город
+                </label>
+                <Input
+                  id="city"
+                  value={checkoutInfo.city}
+                  onChange={(e) => setCheckoutInfo({ ...checkoutInfo, city: e.target.value })}
+                />
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label htmlFor="address" className="text-sm font-medium">
+                  Адрес*
+                </label>
+                <Input
+                  id="address"
+                  value={checkoutInfo.address}
+                  onChange={(e) => setCheckoutInfo({ ...checkoutInfo, address: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <label htmlFor="postalCode" className="text-sm font-medium">
+                  Почтовый индекс
+                </label>
+                <Input
+                  id="postalCode"
+                  value={checkoutInfo.postalCode}
+                  onChange={(e) => setCheckoutInfo({ ...checkoutInfo, postalCode: e.target.value })}
+                />
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <label htmlFor="comment" className="text-sm font-medium">
+                Комментарий к заказу
+              </label>
+              <Textarea
+                id="comment"
+                value={checkoutInfo.comment}
+                onChange={(e) => setCheckoutInfo({ ...checkoutInfo, comment: e.target.value })}
+                placeholder="Дополнительная информация для доставки"
+              />
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setCheckoutDialogOpen(false)}
+              disabled={isCheckingOut}
+            >
+              Отмена
+            </Button>
+            <Button 
+              onClick={handleCheckout}
+              disabled={isCheckingOut}
+            >
+              {isCheckingOut ? "Обработка..." : "Подтвердить заказ"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

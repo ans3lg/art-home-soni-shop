@@ -3,107 +3,120 @@ const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const { auth } = require('../middleware/auth');
 
-// Register a new user
+// Регистрация пользователя
 router.post('/register', async (req, res) => {
   try {
-    const { email, password, name } = req.body;
-
-    // Check if user already exists
+    const { name, email, password } = req.body;
+    
+    // Проверяем, существует ли пользователь
     let user = await User.findOne({ email });
     if (user) {
       return res.status(400).json({ message: 'Пользователь с таким email уже существует' });
     }
-
-    user = new User({ email, password, name });
+    
+    // Создаем нового пользователя
+    user = new User({ name, email, password });
     await user.save();
-
-    // Create JWT token
+    
+    // Создаем JWT токен
     const token = jwt.sign(
-      { id: user._id, email: user.email, role: user.role },
+      { id: user.id, role: user.role },
       process.env.JWT_SECRET,
-      { expiresIn: '7d' }
+      { expiresIn: '30d' }
     );
-
+    
     res.status(201).json({
       token,
       user: {
-        id: user._id,
-        email: user.email,
+        id: user.id,
         name: user.name,
+        email: user.email,
         role: user.role
       }
     });
   } catch (error) {
-    console.error('Register error:', error);
-    res.status(500).json({ message: 'Ошибка сервера' });
+    console.error('Registration error:', error);
+    res.status(500).json({ message: error.message });
   }
 });
 
-// Login user
+// Авторизация пользователя
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
-
-    // Find user
+    
+    // Находим пользователя
     const user = await User.findOne({ email });
     if (!user) {
       return res.status(400).json({ message: 'Неверный email или пароль' });
     }
-
-    // Check password
+    
+    // Проверяем пароль
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
       return res.status(400).json({ message: 'Неверный email или пароль' });
     }
-
-    // Create JWT token
+    
+    // Создаем JWT токен
     const token = jwt.sign(
-      { id: user._id, email: user.email, role: user.role },
+      { id: user.id, role: user.role },
       process.env.JWT_SECRET,
-      { expiresIn: '7d' }
+      { expiresIn: '30d' }
     );
-
+    
     res.json({
       token,
       user: {
-        id: user._id,
-        email: user.email,
+        id: user.id,
         name: user.name,
-        role: user.role
+        email: user.email,
+        role: user.role,
+        phone: user.phone,
+        address: user.address
       }
     });
   } catch (error) {
     console.error('Login error:', error);
-    res.status(500).json({ message: 'Ошибка сервера' });
+    res.status(500).json({ message: error.message });
   }
 });
 
-// Get current user
-router.get('/me', async (req, res) => {
+// Получение данных текущего пользователя
+router.get('/me', auth, async (req, res) => {
   try {
-    const token = req.headers.authorization?.split(' ')[1];
-    
-    if (!token) {
-      return res.status(401).json({ message: 'Токен не предоставлен' });
-    }
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await User.findById(decoded.id).select('-password');
-
+    const user = await User.findById(req.user.id).select('-password');
     if (!user) {
       return res.status(404).json({ message: 'Пользователь не найден' });
     }
-
-    res.json({
-      id: user._id,
-      email: user.email,
-      name: user.name,
-      role: user.role
-    });
+    res.json(user);
   } catch (error) {
-    console.error('Get user error:', error);
-    res.status(401).json({ message: 'Недействительный токен' });
+    console.error('Get me error:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Обновление профиля пользователя
+router.put('/profile', auth, async (req, res) => {
+  try {
+    const { name, email, phone, address } = req.body;
+    
+    // Находим и обновляем пользователя
+    const user = await User.findByIdAndUpdate(
+      req.user.id,
+      { name, email, phone, address },
+      { new: true }
+    ).select('-password');
+    
+    if (!user) {
+      return res.status(404).json({ message: 'Пользователь не найден' });
+    }
+    
+    res.json(user);
+  } catch (error) {
+    console.error('Update profile error:', error);
+    res.status(500).json({ message: error.message });
   }
 });
 

@@ -1,12 +1,12 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { LayoutDashboard, Package, UserCog, ShoppingBag, Tags, Plus, Pencil, Trash2, Check, X } from "lucide-react";
+import { LayoutDashboard, Package, UserCog, ShoppingBag, Tags, Activity, Plus, Pencil, Trash2, Check, X } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { api } from "@/services/api";
@@ -25,8 +25,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Navigate } from 'react-router-dom';
+import ReportsSection from "@/components/admin/ReportsSection";
 
-type ActiveTabType = 'orders' | 'paintings' | 'workshops' | 'promocodes';
+type ActiveTabType = 'orders' | 'paintings' | 'workshops' | 'promocodes' | 'reports';
 
 interface Workshop {
   _id: string;
@@ -38,6 +40,7 @@ interface Workshop {
   availableSpots: number;
   image: string;
   location: string;
+  registeredParticipants: any[];
 }
 
 interface Painting {
@@ -73,7 +76,7 @@ interface Order {
 }
 
 const AdminPanelPage = () => {
-  const { token } = useAuth();
+  const { user, token, isAdmin } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<ActiveTabType>('orders');
@@ -112,6 +115,11 @@ const AdminPanelPage = () => {
   });
 
   const [imageFile, setImageFile] = useState<File | null>(null);
+  
+  // Redirect if not admin
+  if (!isAdmin) {
+    return <Navigate to="/" />;
+  }
 
   // Queries
   const paintings = useQuery({
@@ -468,7 +476,7 @@ const AdminPanelPage = () => {
     <div className="section-container">
       <h1 className="page-title">Панель администратора</h1>
       
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
         <Card 
           className={`dashboard-card cursor-pointer ${activeTab === 'orders' ? 'border-primary' : ''}`}
           onClick={() => setActiveTab('orders')}
@@ -528,6 +536,21 @@ const AdminPanelPage = () => {
             </div>
           </div>
         </Card>
+        
+        <Card 
+          className={`dashboard-card cursor-pointer ${activeTab === 'reports' ? 'border-primary' : ''}`}
+          onClick={() => setActiveTab('reports')}
+        >
+          <div className="flex items-center gap-4 p-4">
+            <div className={`p-4 rounded-lg ${activeTab === 'reports' ? 'bg-primary text-white' : 'bg-primary/10 text-primary'}`}>
+              <Activity className="h-6 w-6" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold">Отчеты</h3>
+              <p className="text-muted-foreground">Статистика и аналитика</p>
+            </div>
+          </div>
+        </Card>
       </div>
 
       <Card>
@@ -536,10 +559,11 @@ const AdminPanelPage = () => {
             <CardTitle>Управление {
               activeTab === 'orders' ? 'заказами' : 
               activeTab === 'paintings' ? 'картинами' : 
-              activeTab === 'workshops' ? 'мастер-классами' : 'промокодами'
+              activeTab === 'workshops' ? 'мастер-классами' : 
+              activeTab === 'promocodes' ? 'промокодами' : 'отчетами'
             }</CardTitle>
             
-            {activeTab !== 'orders' && (
+            {activeTab !== 'orders' && activeTab !== 'reports' && (
               <Button onClick={() => handleOpenModal('create')}>
                 <Plus className="mr-2 h-4 w-4" />
                 Добавить {
@@ -551,6 +575,11 @@ const AdminPanelPage = () => {
           </div>
         </CardHeader>
         <CardContent>
+          {/* Reports Tab */}
+          {activeTab === 'reports' && (
+            <ReportsSection />
+          )}
+        
           {/* Orders Tab */}
           {activeTab === 'orders' && (
             <div className="space-y-4">
@@ -704,7 +733,7 @@ const AdminPanelPage = () => {
                     <TableHead>Название</TableHead>
                     <TableHead>Дата</TableHead>
                     <TableHead>Мест</TableHead>
-                    <TableHead>Цена</TableHead>
+                    <TableHead>Участников</TableHead>
                     <TableHead>Действия</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -728,7 +757,9 @@ const AdminPanelPage = () => {
                         <TableCell className="font-medium">{workshop.title}</TableCell>
                         <TableCell>{formatDate(workshop.date)}</TableCell>
                         <TableCell>{workshop.availableSpots}</TableCell>
-                        <TableCell>{workshop.price.toLocaleString()} ₽</TableCell>
+                        <TableCell>
+                          {workshop.registeredParticipants?.length || 0}
+                        </TableCell>
                         <TableCell className="space-x-2">
                           <Button 
                             variant="outline" 

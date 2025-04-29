@@ -2,49 +2,45 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
-const bodyParser = require('body-parser');
 const dotenv = require('dotenv');
+const path = require('path');
+const bodyParser = require('body-parser');
 
-// Загружаем переменные окружения
+// Загрузка переменных окружения
 dotenv.config();
 
+// Инициализация Express
 const app = express();
 
-// Промежуточное ПО
+// Middleware
 app.use(cors());
 app.use(bodyParser.json());
 app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
 
-// Подключаем маршруты API
-const paintingsRoutes = require('./routes/paintings');
-const workshopsRoutes = require('./routes/workshops');
-const ordersRoutes = require('./routes/orders');
-const authRoutes = require('./routes/auth');
-const promoCodesRoutes = require('./routes/promocodes');
+// Подключение к базе данных MongoDB
+mongoose.connect(process.env.MONGODB_URI)
+  .then(() => console.log('MongoDB подключена'))
+  .catch(err => console.error('Ошибка подключения к MongoDB:', err));
 
-app.use('/api/paintings', paintingsRoutes);
-app.use('/api/workshops', workshopsRoutes);
-app.use('/api/orders', ordersRoutes);
-app.use('/api/auth', authRoutes);
-app.use('/api/promocodes', promoCodesRoutes);
+// Настройка статических файлов
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// Маршруты API
+app.use('/api/auth', require('./routes/auth'));
+app.use('/api/paintings', require('./routes/paintings'));
+app.use('/api/workshops', require('./routes/workshops'));
+app.use('/api/promocodes', require('./routes/promocodes'));
+app.use('/api/orders', require('./routes/orders'));
+app.use('/api/cart', require('./routes/cart'));
+app.use('/api/reports', require('./routes/reports'));
 
 // Базовый маршрут для проверки API
 app.get('/api', (req, res) => {
   res.json({ message: 'Art Home Soni API работает' });
 });
 
-// Подключение к MongoDB
+// Порт для сервера
 const PORT = process.env.PORT || 5000;
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/art_home_soni';
-const JWT_SECRET = process.env.JWT_SECRET || 'art-home-soni-secret-key';
 
-mongoose.connect(MONGODB_URI)
-  .then(() => {
-    console.log('Подключено к MongoDB');
-    app.listen(PORT, () => {
-      console.log(`Сервер запущен на порту ${PORT}`);
-    });
-  })
-  .catch((error) => {
-    console.error('Ошибка подключения к MongoDB:', error);
-  });
+app.listen(PORT, () => console.log(`Сервер запущен на порту ${PORT}`));
