@@ -1,73 +1,77 @@
-# Welcome to your Lovable project
 
-## Project info
+# Art Home Soni
 
-**URL**: https://lovable.dev/projects/60e15bb8-9c1e-47f1-9b6d-d9b11f337e45
+Проект художественной галереи с функциями электронной коммерции.
 
-## How can I edit this code?
+## Технологии
 
-There are several ways of editing your application.
+- Frontend: React, TypeScript, Tailwind CSS, Shadcn UI
+- Backend: Express.js
+- Database: MongoDB
 
-**Use Lovable**
+## Установка и запуск
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/60e15bb8-9c1e-47f1-9b6d-d9b11f337e45) and start prompting.
+### Предварительные требования
 
-Changes made via Lovable will be committed automatically to this repo.
+- Node.js (v16 или выше)
+- MongoDB (локальная установка или MongoDB Atlas)
 
-**Use your preferred IDE**
+### Шаги установки
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+1. Клонировать репозиторий
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+```bash
+git clone [url-репозитория]
+cd art-home-soni
+```
 
-Follow these steps:
+2. Установить зависимости для фронтенда
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+```bash
+npm install
+```
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+3. Установить зависимости для бэкенда
 
-# Step 3: Install the necessary dependencies.
-npm i
+```bash
+cd server
+npm install
+```
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+4. Настроить переменные окружения
+
+Скопируйте файл `.env.example` и переименуйте в `.env`:
+
+```bash
+cp .env.example .env
+```
+
+Отредактируйте файл `.env` в корне проекта и добавьте свои настройки для MongoDB.
+
+5. Запустить MongoDB (если используете локальную версию)
+
+```bash
+mongod
+```
+
+6. Запустить бэкенд
+
+```bash
+cd server
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+7. В другом терминале запустить фронтенд
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+```bash
+npm run dev
+```
 
-**Use GitHub Codespaces**
+8. Откройте браузер и перейдите по адресу `http://localhost:5173`
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## Функциональность
 
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/60e15bb8-9c1e-47f1-9b6d-d9b11f337e45) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+- Просмотр каталога картин с возможностью фильтрации
+- Запись на мастер-классы
+- Корзина и оформление заказов
+- Отслеживание статуса заказов и бронирований
