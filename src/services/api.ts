@@ -13,6 +13,59 @@ interface OrderData {
 }
 
 export const api = {
+  // Auth
+  async register(name: string, email: string, password: string) {
+    const response = await fetch(`${API_URL}/auth/register`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ name, email, password }),
+    });
+    
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.message || 'Ошибка регистрации');
+    }
+    
+    return data;
+  },
+
+  async login(email: string, password: string) {
+    const response = await fetch(`${API_URL}/auth/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email, password }),
+    });
+    
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.message || 'Неверный email или пароль');
+    }
+    
+    return data;
+  },
+
+  async getCurrentUser(token: string) {
+    const response = await fetch(`${API_URL}/auth/me`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+    
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.message || 'Ошибка получения данных пользователя');
+    }
+    
+    return data;
+  },
+
   // Картины
   async getPaintings() {
     const response = await fetch(`${API_URL}/paintings`);
@@ -27,6 +80,56 @@ export const api = {
     if (!response.ok) {
       throw new Error('Не удалось загрузить информацию о картине');
     }
+    return await response.json();
+  },
+
+  async createPainting(paintingData: FormData, token: string) {
+    const response = await fetch(`${API_URL}/paintings`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+      body: paintingData,
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Не удалось создать картину');
+    }
+    
+    return await response.json();
+  },
+
+  async updatePainting(id: string, paintingData: FormData, token: string) {
+    const response = await fetch(`${API_URL}/paintings/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+      body: paintingData,
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Не удалось обновить картину');
+    }
+    
+    return await response.json();
+  },
+
+  async deletePainting(id: string, token: string) {
+    const response = await fetch(`${API_URL}/paintings/${id}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Не удалось удалить картину');
+    }
+    
     return await response.json();
   },
 
@@ -47,6 +150,56 @@ export const api = {
     return await response.json();
   },
 
+  async createWorkshop(workshopData: FormData, token: string) {
+    const response = await fetch(`${API_URL}/workshops`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+      body: workshopData,
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Не удалось создать мастер-класс');
+    }
+    
+    return await response.json();
+  },
+
+  async updateWorkshop(id: string, workshopData: FormData, token: string) {
+    const response = await fetch(`${API_URL}/workshops/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+      body: workshopData,
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Не удалось обновить мастер-класс');
+    }
+    
+    return await response.json();
+  },
+
+  async deleteWorkshop(id: string, token: string) {
+    const response = await fetch(`${API_URL}/workshops/${id}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Не удалось удалить мастер-класс');
+    }
+    
+    return await response.json();
+  },
+
   async bookWorkshop(workshopId: string, data: any) {
     const response = await fetch(`${API_URL}/workshops/${workshopId}/book`, {
       method: 'POST',
@@ -61,34 +214,171 @@ export const api = {
     return await response.json();
   },
 
-  // Заказы
-  async createOrder(orderData: OrderData) {
-    const response = await fetch(`${API_URL}/orders`, {
+  // Промокоды
+  async getPromoCodes(token: string) {
+    const response = await fetch(`${API_URL}/promocodes`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Не удалось загрузить промокоды');
+    }
+    
+    return await response.json();
+  },
+
+  async createPromoCode(data: any, token: string) {
+    const response = await fetch(`${API_URL}/promocodes`, {
       method: 'POST',
       headers: {
+        'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
+      body: JSON.stringify(data),
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Не удалось создать промокод');
+    }
+    
+    return await response.json();
+  },
+
+  async verifyPromoCode(code: string, token: string) {
+    const response = await fetch(`${API_URL}/promocodes/verify`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ code }),
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Недействительный промокод');
+    }
+    
+    return await response.json();
+  },
+
+  async updatePromoCode(id: string, data: any, token: string) {
+    const response = await fetch(`${API_URL}/promocodes/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Не удалось обновить промокод');
+    }
+    
+    return await response.json();
+  },
+
+  async deletePromoCode(id: string, token: string) {
+    const response = await fetch(`${API_URL}/promocodes/${id}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Не удалось удалить промокод');
+    }
+    
+    return await response.json();
+  },
+
+  // Заказы
+  async createOrder(orderData: OrderData, token?: string) {
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+    };
+    
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    
+    const response = await fetch(`${API_URL}/orders`, {
+      method: 'POST',
+      headers,
       body: JSON.stringify(orderData),
     });
+    
     if (!response.ok) {
       throw new Error('Не удалось создать заказ');
     }
+    
     return await response.json();
   },
 
-  async getOrderById(id: string) {
-    const response = await fetch(`${API_URL}/orders/${id}`);
+  async getOrderById(id: string, token: string) {
+    const response = await fetch(`${API_URL}/orders/${id}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+    
     if (!response.ok) {
       throw new Error('Не удалось загрузить информацию о заказе');
     }
+    
     return await response.json();
   },
 
-  async getOrdersByEmail(email: string) {
-    const response = await fetch(`${API_URL}/orders?email=${email}`);
+  async getUserOrders(token: string) {
+    const response = await fetch(`${API_URL}/orders/user`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+    
     if (!response.ok) {
       throw new Error('Не удалось загрузить историю заказов');
     }
+    
+    return await response.json();
+  },
+  
+  async getAllOrders(token: string) {
+    const response = await fetch(`${API_URL}/orders`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+    
+    if (!response.ok) {
+      throw new Error('Не удалось загрузить заказы');
+    }
+    
+    return await response.json();
+  },
+  
+  async updateOrderStatus(id: string, status: string, token: string) {
+    const response = await fetch(`${API_URL}/orders/${id}/status`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ status }),
+    });
+    
+    if (!response.ok) {
+      throw new Error('Не удалось обновить статус заказа');
+    }
+    
     return await response.json();
   }
 };

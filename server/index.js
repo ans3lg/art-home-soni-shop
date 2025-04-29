@@ -19,10 +19,14 @@ app.use(express.json());
 const paintingsRoutes = require('./routes/paintings');
 const workshopsRoutes = require('./routes/workshops');
 const ordersRoutes = require('./routes/orders');
+const authRoutes = require('./routes/auth');
+const promoCodesRoutes = require('./routes/promocodes');
 
 app.use('/api/paintings', paintingsRoutes);
 app.use('/api/workshops', workshopsRoutes);
 app.use('/api/orders', ordersRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/promocodes', promoCodesRoutes);
 
 // Базовый маршрут для проверки API
 app.get('/api', (req, res) => {
@@ -32,6 +36,7 @@ app.get('/api', (req, res) => {
 // Подключение к MongoDB
 const PORT = process.env.PORT || 5000;
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/art_home_soni';
+const JWT_SECRET = process.env.JWT_SECRET || 'art-home-soni-secret-key';
 
 mongoose.connect(MONGODB_URI)
   .then(() => {

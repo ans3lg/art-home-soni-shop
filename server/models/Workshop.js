@@ -35,6 +35,19 @@ const WorkshopSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  registeredParticipants: [{
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    name: String,
+    email: String,
+    phone: String,
+    registeredAt: {
+      type: Date,
+      default: Date.now
+    }
+  }],
   createdAt: {
     type: Date,
     default: Date.now
