@@ -1,7 +1,9 @@
-
 import { CartItem } from "@/contexts/CartContext";
 
-const API_URL = "http://localhost:5000/api";
+// Используем переменную окружения или дефолтное значение
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+
+console.log("Using API URL:", API_URL); // Для отладки
 
 interface OrderData {
   items: CartItem[];
@@ -15,39 +17,55 @@ interface OrderData {
 export const api = {
   // Auth
   async register(name: string, email: string, password: string) {
-    const response = await fetch(`${API_URL}/auth/register`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ name, email, password }),
-    });
+    console.log("Registering user:", { name, email });
+    console.log("API URL:", API_URL);
     
-    const data = await response.json();
-    
-    if (!response.ok) {
-      throw new Error(data.message || 'Ошибка регистрации');
+    try {
+      const response = await fetch(`${API_URL}/auth/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name, email, password }),
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.message || 'Ошибка регистрации');
+      }
+      
+      return data;
+    } catch (error) {
+      console.error("Registration error details:", error);
+      throw error;
     }
-    
-    return data;
   },
 
   async login(email: string, password: string) {
-    const response = await fetch(`${API_URL}/auth/login`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ email, password }),
-    });
+    console.log("Logging in user:", { email });
+    console.log("API URL:", API_URL);
     
-    const data = await response.json();
-    
-    if (!response.ok) {
-      throw new Error(data.message || 'Неверный email или пароль');
+    try {
+      const response = await fetch(`${API_URL}/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.message || 'Неверный email или пароль');
+      }
+      
+      return data;
+    } catch (error) {
+      console.error("Login error details:", error);
+      throw error;
     }
-    
-    return data;
   },
 
   async getCurrentUser(token: string) {
