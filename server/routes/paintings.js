@@ -5,7 +5,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const Painting = require('../models/Painting');
-const { auth, admin, artist, owner } = require('../middleware/auth');
+const { auth, admin } = require('../middleware/auth');
 
 // Настройка хранилища для загрузки изображений
 const storage = multer.diskStorage({
@@ -27,7 +27,7 @@ const upload = multer({ storage: storage });
 // Получить все картины
 router.get('/', async (req, res) => {
   try {
-    const paintings = await Painting.find().populate('author', 'name');
+    const paintings = await Painting.find();
     res.json(paintings);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -37,7 +37,7 @@ router.get('/', async (req, res) => {
 // Получить картину по ID
 router.get('/:id', async (req, res) => {
   try {
-    const painting = await Painting.findById(req.params.id).populate('author', 'name');
+    const painting = await Painting.findById(req.params.id);
     if (!painting) {
       return res.status(404).json({ message: 'Картина не найдена' });
     }
@@ -48,7 +48,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // Создать новую картину
-router.post('/', auth, artist, upload.single('image'), async (req, res) => {
+router.post('/', auth, admin, upload.single('image'), async (req, res) => {
   try {
     console.log('Received data:', req.body);
     console.log('Received file:', req.file);
@@ -62,9 +62,7 @@ router.post('/', auth, artist, upload.single('image'), async (req, res) => {
     const paintingData = {
       ...req.body,
       image: imageUrl,
-      price: Number(req.body.price),
-      author: req.user.id,
-      authorName: req.body.authorName || req.user.name
+      price: Number(req.body.price)
     };
     
     const painting = new Painting(paintingData);
@@ -78,7 +76,7 @@ router.post('/', auth, artist, upload.single('image'), async (req, res) => {
 });
 
 // Обновить картину
-router.put('/:id', auth, owner(Painting), upload.single('image'), async (req, res) => {
+router.put('/:id', auth, admin, upload.single('image'), async (req, res) => {
   try {
     let updateData = { ...req.body };
     
@@ -119,7 +117,7 @@ router.put('/:id', auth, owner(Painting), upload.single('image'), async (req, re
 });
 
 // Удалить картину
-router.delete('/:id', auth, owner(Painting), async (req, res) => {
+router.delete('/:id', auth, admin, async (req, res) => {
   try {
     const painting = await Painting.findById(req.params.id);
     

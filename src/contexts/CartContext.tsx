@@ -1,9 +1,10 @@
+
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { api } from "@/services/api";
 import { useAuth } from "@/contexts/AuthContext";
+import { api } from "@/services/api";
 import { useToast } from "@/components/ui/use-toast";
 
-interface CartItem {
+export interface CartItem {
   id: string;
   productId: string;
   itemType: 'Painting' | 'Workshop';
@@ -15,16 +16,12 @@ interface CartItem {
 
 interface CartContextType {
   items: CartItem[];
-  totalItems: number;
-  totalPrice: number;
-  loading: boolean;
-  addItem: (item: CartItem) => void;
-  removeItem: (itemId: string) => void;
-  updateItemQuantity: (itemId: string, quantity: number) => void;
-  clearCart: () => void;
+  addItem: (item: CartItem) => Promise<void>;
+  removeItem: (id: string) => Promise<void>;
+  updateQuantity: (id: string, quantity: number) => Promise<void>;
+  clearCart: () => Promise<void>;
   getItemCount: () => number;
   getTotal: () => number;
-  updateQuantity: (itemId: string, quantity: number) => void;
   isLoading: boolean;
 }
 
@@ -32,222 +29,185 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const CartProvider = ({ children }: { children: ReactNode }) => {
   const [items, setItems] = useState<CartItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const { isAuthenticated, token } = useAuth();
   const { toast } = useToast();
   
-  // Загрузка корзины с сервера при первоначальной загрузке
+  // Загружаем корзину с сервера при авторизации
   useEffect(() => {
-    if (isAuthenticated && token) {
-      fetchCart();
-    } else {
-      setLoading(false);
-      setItems([]);
-    }
-  }, [isAuthenticated, token]);
-  
-  // Загружаем корзину с сервера
-  const fetchCart = async () => {
-    try {
-      setLoading(true);
-      const cartData = await api.getCart(token!);
-      
-      if (cartData && cartData.items) {
-        const mappedItems: CartItem[] = cartData.items.map((item: any) => ({
-          id: item._id,
-          productId: item.productId,
-          itemType: item.itemType,
-          title: item.title,
-          price: item.price,
-          quantity: item.quantity,
-          image: item.image
-        }));
-        
-        setItems(mappedItems);
-      }
-    } catch (error) {
-      console.error('Error fetching cart:', error);
-      toast({
-        title: "Ошибка",
-        description: "Не удалось загрузить корзину",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  // Добавляем товар в корзину
-  const addItem = async (item: CartItem) => {
-    try {
-      if (!isAuthenticated) {
-        toast({
-          title: "Ошибка",
-          description: "Необходимо авторизоваться для добавления товаров в корзину",
-          variant: "destructive"
-        });
-        return;
-      }
-      
-      setLoading(true);
-      
-      // Проверяем, есть ли товар в корзине
-      const existingItemIndex = items.findIndex(i => i.productId === item.productId && i.itemType === item.itemType);
-      
-      if (existingItemIndex >= 0) {
-        // Если товар уже в корзине, увеличиваем количество
-        const newQuantity = items[existingItemIndex].quantity + item.quantity;
-        await api.updateCartItemQuantity(items[existingItemIndex].id, newQuantity, token!);
-        
-        // Обновляем локальное состояние
-        const updatedItems = [...items];
-        updatedItems[existingItemIndex] = {
-          ...updatedItems[existingItemIndex],
-          quantity: newQuantity
-        };
-        setItems(updatedItems);
-      } else {
-        // Если товара нет в корзине, добавляем новый
-        const response = await api.addToCart({
-          productId: item.productId,
-          itemType: item.itemType,
-          title: item.title,
-          price: item.price,
-          quantity: item.quantity,
-          image: item.image
-        }, token!);
-        
-        // Обновляем локальное состояние
-        if (response && response.cart && response.cart.items) {
-          fetchCart(); // Перезагружаем всю корзину для синхронизации
+    const loadCart = async () => {
+      if (isAuthenticated && token) {
+        try {
+          setIsLoading(true);
+          const cartItems = await api.getCart(token);
+          setItems(cartItems);
+        } catch (error) {
+          console.error('Failed to load cart:', error);
+          toast({
+            title: "Ошибка",
+            description: "Не удалось загрузить корзину",
+            variant: "destructive",
+          });
+        } finally {
+          setIsLoading(false);
         }
       }
-    } catch (error: any) {
+    };
+    
+    loadCart();
+  }, [isAuthenticated, token]);
+  
+  const addItem = async (newItem: CartItem) => {
+    try {
+      setIsLoading(true);
+      
+      if (isAuthenticated && token) {
+        // Добавление в корзину на сервере
+        const cartItem = {
+          productId: newItem.productId,
+          itemType: newItem.itemType,
+          title: newItem.title,
+          price: newItem.price,
+          quantity: newItem.quantity,
+          image: newItem.image
+        };
+        
+        const updatedCart = await api.addToCart(cartItem, token);
+        setItems(updatedCart);
+      } else {
+        // Локальное добавление для неавторизованных пользователей
+        setItems(currentItems => {
+          const existingItem = currentItems.find(item => 
+            item.productId === newItem.productId && item.itemType === newItem.itemType
+          );
+          
+          if (existingItem) {
+            return currentItems.map(item =>
+              item.productId === newItem.productId && item.itemType === newItem.itemType
+                ? { ...item, quantity: item.quantity + (newItem.quantity || 1) }
+                : item
+            );
+          } else {
+            return [...currentItems, { ...newItem, quantity: newItem.quantity || 1 }];
+          }
+        });
+      }
+      
+      toast({
+        title: "Товар добавлен",
+        description: `"${newItem.title}" добавлен в корзину`,
+      });
+    } catch (error) {
       console.error('Error adding item to cart:', error);
       toast({
         title: "Ошибка",
-        description: error.message || "Не удалось добавить товар в корзину",
-        variant: "destructive"
+        description: "Не удалось добавить товар в корзину",
+        variant: "destructive",
       });
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
   
-  // Изменяем количество товара
-  const updateItemQuantity = async (itemId: string, quantity: number) => {
+  const removeItem = async (id: string) => {
     try {
-      if (quantity <= 0) {
-        // Если количество меньше или равно нулю, удаляем товар
-        await removeItem(itemId);
-        return;
+      setIsLoading(true);
+      
+      if (isAuthenticated && token) {
+        // Удаление с сервера
+        const updatedCart = await api.removeFromCart(id, token);
+        setItems(updatedCart);
+      } else {
+        // Локальное удаление
+        setItems(currentItems => currentItems.filter(item => item.id !== id));
       }
-      
-      setLoading(true);
-      await api.updateCartItemQuantity(itemId, quantity, token!);
-      
-      // Обновляем локальное состояние
-      setItems(prevItems => 
-        prevItems.map(item => 
-          item.id === itemId ? { ...item, quantity } : item
-        )
-      );
-    } catch (error) {
-      console.error('Error updating item quantity:', error);
-      toast({
-        title: "Ошибка",
-        description: "Не удалось обновить количество товара",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  // Get item count - alias for Header component
-  const getItemCount = () => {
-    return totalItems;
-  };
-  
-  // Get total price - alias for Cart page
-  const getTotal = () => {
-    return totalPrice;
-  };
-  
-  // Alias for updateItemQuantity to match CartPage usage
-  const updateQuantity = async (itemId: string, quantity: number) => {
-    return updateItemQuantity(itemId, quantity);
-  };
-  
-  // Удаляем товар из корзины
-  const removeItem = async (itemId: string) => {
-    try {
-      setLoading(true);
-      await api.removeFromCart(itemId, token!);
-      
-      // Обновляем локальное состояние
-      setItems(prevItems => prevItems.filter(item => item.id !== itemId));
-      
-      toast({
-        title: "Товар удален",
-        description: "Товар успешно удален из корзины",
-      });
     } catch (error) {
       console.error('Error removing item from cart:', error);
       toast({
         title: "Ошибка",
         description: "Не удалось удалить товар из корзины",
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
   
-  // Очищаем корзину
+  const updateQuantity = async (id: string, quantity: number) => {
+    try {
+      if (quantity <= 0) {
+        await removeItem(id);
+        return;
+      }
+      
+      setIsLoading(true);
+      
+      if (isAuthenticated && token) {
+        // Обновление на сервере
+        const updatedCart = await api.updateCartItem(id, quantity, token);
+        setItems(updatedCart);
+      } else {
+        // Локальное обновление
+        setItems(currentItems =>
+          currentItems.map(item =>
+            item.id === id ? { ...item, quantity } : item
+          )
+        );
+      }
+    } catch (error) {
+      console.error('Error updating cart item:', error);
+      toast({
+        title: "Ошибка",
+        description: "Не удалось обновить количество товара",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
   const clearCart = async () => {
     try {
-      setLoading(true);
-      await api.clearCart(token!);
+      setIsLoading(true);
       
-      // Обновляем локальное состояние
+      if (isAuthenticated && token) {
+        // Очистка на сервере
+        await api.clearCart(token);
+      }
+      
+      // Локальная очистка
       setItems([]);
-      
-      toast({
-        title: "Корзина очищена",
-        description: "Все товары удалены из корзины",
-      });
     } catch (error) {
       console.error('Error clearing cart:', error);
       toast({
         title: "Ошибка",
         description: "Не удалось очистить корзину",
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
   
-  // Вычисляем общее количество товаров и общую стоимость
-  const totalItems = items.reduce((acc, item) => acc + item.quantity, 0);
-  const totalPrice = items.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+  const getItemCount = () => {
+    return items.reduce((total, item) => total + item.quantity, 0);
+  };
+  
+  const getTotal = () => {
+    return items.reduce((total, item) => total + (item.price * item.quantity), 0);
+  };
   
   return (
     <CartContext.Provider
       value={{
         items,
-        totalItems,
-        totalPrice,
-        loading,
         addItem,
         removeItem,
-        updateItemQuantity,
+        updateQuantity,
         clearCart,
         getItemCount,
         getTotal,
-        updateQuantity,
-        isLoading: loading
+        isLoading
       }}
     >
       {children}

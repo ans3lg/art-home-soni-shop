@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { 
@@ -6,15 +7,15 @@ import {
   TabsList, 
   TabsTrigger 
 } from "@/components/ui/tabs";
-import { ShoppingCart, Heart, Loader2, User } from "lucide-react";
+import { ShoppingCart, Heart, Loader2 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { useCart } from "@/contexts/CartContext";
 import { api } from "@/services/api";
 import { Card } from "@/components/ui/card";
-import { useAuth } from "@/contexts/AuthContext";
 
 interface Painting {
   _id: string;
+  id: number;
   title: string;
   description: string;
   category: string;
@@ -22,12 +23,6 @@ interface Painting {
   size: string;
   price: number;
   image: string;
-  author: {
-    _id: string;
-    name: string;
-  } | string;
-  authorName: string;
-  inStock: boolean;
 }
 
 export default function PaintingsPage() {
@@ -37,16 +32,88 @@ export default function PaintingsPage() {
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
   const { addItem } = useCart();
-  const { isAuthenticated } = useAuth();
   
   useEffect(() => {
     const fetchPaintings = async () => {
       try {
         setLoading(true);
-        const data = await api.getPaintings();
-        setPaintings(data);
+        // Пока API не готов, будем использовать моковые данные
+        // const data = await api.getPaintings();
+        // setPaintings(data);
+        
+        // Временные моковые данные
+        const mockData = [
+          {
+            _id: "1",
+            id: 1,
+            title: "Летний бриз",
+            description: "Яркая летняя композиция с элементами природы и цветов.",
+            category: "abstract",
+            materials: "Холст, масло",
+            size: "60×80 см",
+            price: 14500,
+            image: "https://images.unsplash.com/photo-1549887552-cb1071d3e5ca"
+          },
+          {
+            _id: "2",
+            id: 2,
+            title: "Горное озеро",
+            description: "Умиротворяющий пейзаж с отражением гор в кристально чистой воде.",
+            category: "landscape",
+            materials: "Холст, акрил",
+            size: "50×70 см",
+            price: 12800,
+            image: "https://images.unsplash.com/photo-1578301978693-85fa9c0320b9"
+          },
+          {
+            _id: "3",
+            id: 3,
+            title: "Весеннее настроение",
+            description: "Нежный натюрморт с весенними цветами и декоративными элементами.",
+            category: "stilllife",
+            materials: "Холст, масло",
+            size: "40×50 см",
+            price: 8900,
+            image: "https://images.unsplash.com/photo-1574182245530-967d9b3831af"
+          },
+          {
+            _id: "4",
+            id: 4,
+            title: "Городская осень",
+            description: "Уютная городская улица в осенних красках и теплом солнечном свете.",
+            category: "landscape",
+            materials: "Холст, акрил",
+            size: "60×90 см",
+            price: 16200,
+            image: "https://images.unsplash.com/photo-1572883454114-1cf0031ede2a"
+          },
+          {
+            _id: "5",
+            id: 5,
+            title: "Абстрактная гармония",
+            description: "Динамичная композиция с глубоким смыслом и интересными цветовыми решениями.",
+            category: "abstract",
+            materials: "Холст, акрил",
+            size: "80×100 см",
+            price: 18500,
+            image: "https://images.unsplash.com/photo-1536924940846-227afb31e2a5"
+          },
+          {
+            _id: "6",
+            id: 6,
+            title: "Магнолия в цвету",
+            description: "Нежный и воздушный натюрморт с ветками магнолии в керамической вазе.",
+            category: "stilllife",
+            materials: "Холст, масло",
+            size: "50×60 см",
+            price: 11300,
+            image: "https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5"
+          }
+        ];
+        
+        setPaintings(mockData);
         setLoading(false);
-      } catch (err: any) {
+      } catch (err) {
         setError("Не удалось загрузить картины");
         setLoading(false);
         console.error("Error fetching paintings:", err);
@@ -61,19 +128,8 @@ export default function PaintingsPage() {
     : paintings.filter(painting => painting.category === activeCategory);
     
   const handleAddToCart = (painting: Painting) => {
-    if (!isAuthenticated) {
-      toast({
-        title: "Требуется авторизация",
-        description: "Пожалуйста, авторизуйтесь для добавления товаров в корзину",
-        duration: 3000,
-      });
-      return;
-    }
-
     addItem({
-      id: painting._id,
-      productId: painting._id,
-      itemType: 'Painting',
+      id: painting.id,
       title: painting.title,
       price: painting.price,
       quantity: 1,
@@ -89,13 +145,6 @@ export default function PaintingsPage() {
   
   const formatPrice = (price: number) => {
     return price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ") + " ₽";
-  };
-
-  const getAuthorName = (painting: Painting): string => {
-    if (typeof painting.author === 'object' && painting.author !== null) {
-      return painting.author.name;
-    }
-    return painting.authorName || 'Неизвестный автор';
   };
   
   return (
@@ -133,7 +182,7 @@ export default function PaintingsPage() {
               <div key={painting._id} className="art-card group">
                 <div className="relative aspect-[4/3] overflow-hidden">
                   <img 
-                    src={painting.image.includes('http') ? painting.image : `${import.meta.env.VITE_API_URL}${painting.image}`}
+                    src={painting.image} 
                     alt={painting.title} 
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
@@ -146,10 +195,6 @@ export default function PaintingsPage() {
                 </div>
                 <div className="p-4">
                   <h3 className="font-display text-xl">{painting.title}</h3>
-                  <div className="flex items-center mt-1 text-sm text-gray-600">
-                    <User className="h-3.5 w-3.5 mr-1" />
-                    <span>{getAuthorName(painting)}</span>
-                  </div>
                   <p className="text-gray-600 text-sm mt-1">
                     {painting.materials} • {painting.size}
                   </p>
@@ -159,10 +204,9 @@ export default function PaintingsPage() {
                     <Button 
                       size="sm"
                       onClick={() => handleAddToCart(painting)}
-                      disabled={!painting.inStock}
                     >
                       <ShoppingCart className="h-4 w-4 mr-2" />
-                      {painting.inStock ? 'В корзину' : 'Продано'}
+                      В корзину
                     </Button>
                   </div>
                 </div>

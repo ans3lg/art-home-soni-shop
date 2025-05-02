@@ -27,9 +27,8 @@ import {
 } from "@/components/ui/select";
 import { Navigate } from 'react-router-dom';
 import ReportsSection from "@/components/admin/ReportsSection";
-import { UserManagement } from "@/components/admin/UserManagement";
 
-type ActiveTabType = 'orders' | 'paintings' | 'workshops' | 'promocodes' | 'reports' | 'users';
+type ActiveTabType = 'orders' | 'paintings' | 'workshops' | 'promocodes' | 'reports';
 
 interface Workshop {
   _id: string;
@@ -41,8 +40,6 @@ interface Workshop {
   availableSpots: number;
   image: string;
   location: string;
-  author: string;
-  authorName: string;
   registeredParticipants: any[];
 }
 
@@ -55,8 +52,6 @@ interface Painting {
   size: string;
   price: number;
   image: string;
-  author: string;
-  authorName: string;
   inStock: boolean;
 }
 
@@ -99,7 +94,6 @@ const AdminPanelPage = () => {
     price: 0,
     inStock: true,
     image: '',
-    authorName: '',
   });
 
   const [workshopForm, setWorkshopForm] = useState({
@@ -111,7 +105,6 @@ const AdminPanelPage = () => {
     availableSpots: 0,
     location: '',
     image: '',
-    authorName: '',
   });
 
   const [promoCodeForm, setPromoCodeForm] = useState({
@@ -329,7 +322,6 @@ const AdminPanelPage = () => {
           price: item.price,
           inStock: item.inStock,
           image: item.image,
-          authorName: item.authorName || '',
         });
       } else if (activeTab === 'workshops') {
         setWorkshopForm({
@@ -341,7 +333,6 @@ const AdminPanelPage = () => {
           availableSpots: item.availableSpots,
           location: item.location,
           image: item.image,
-          authorName: item.authorName || '',
         });
       } else if (activeTab === 'promocodes') {
         setPromoCodeForm({
@@ -366,7 +357,6 @@ const AdminPanelPage = () => {
       price: 0,
       inStock: true,
       image: '',
-      authorName: '',
     });
 
     setWorkshopForm({
@@ -378,7 +368,6 @@ const AdminPanelPage = () => {
       availableSpots: 0,
       location: '',
       image: '',
-      authorName: '',
     });
 
     setPromoCodeForm({
@@ -409,7 +398,6 @@ const AdminPanelPage = () => {
       formData.append('size', paintingForm.size);
       formData.append('price', paintingForm.price.toString());
       formData.append('inStock', paintingForm.inStock.toString());
-      formData.append('authorName', paintingForm.authorName || user?.name || "");
       
       if (imageFile) {
         formData.append('image', imageFile);
@@ -433,7 +421,6 @@ const AdminPanelPage = () => {
       formData.append('price', workshopForm.price.toString());
       formData.append('availableSpots', workshopForm.availableSpots.toString());
       formData.append('location', workshopForm.location);
-      formData.append('authorName', workshopForm.authorName || user?.name || "");
       
       if (imageFile) {
         formData.append('image', imageFile);
@@ -485,18 +472,11 @@ const AdminPanelPage = () => {
     return date.toLocaleDateString('ru-RU');
   };
 
-  const getAuthorName = (item: any): string => {
-    if (typeof item.author === 'object' && item.author !== null) {
-      return item.author.name;
-    }
-    return item.authorName || 'Неизвестный автор';
-  };
-
   return (
     <div className="section-container">
       <h1 className="page-title">Панель администратора</h1>
       
-      <div className="grid grid-cols-1 md:grid-cols-6 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
         <Card 
           className={`dashboard-card cursor-pointer ${activeTab === 'orders' ? 'border-primary' : ''}`}
           onClick={() => setActiveTab('orders')}
@@ -571,21 +551,6 @@ const AdminPanelPage = () => {
             </div>
           </div>
         </Card>
-
-        <Card 
-          className={`dashboard-card cursor-pointer ${activeTab === 'users' ? 'border-primary' : ''}`}
-          onClick={() => setActiveTab('users')}
-        >
-          <div className="flex items-center gap-4 p-4">
-            <div className={`p-4 rounded-lg ${activeTab === 'users' ? 'bg-primary text-white' : 'bg-primary/10 text-primary'}`}>
-              <UserCog className="h-6 w-6" />
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold">Пользователи</h3>
-              <p className="text-muted-foreground">Управление ролями</p>
-            </div>
-          </div>
-        </Card>
       </div>
 
       <Card>
@@ -595,11 +560,10 @@ const AdminPanelPage = () => {
               activeTab === 'orders' ? 'заказами' : 
               activeTab === 'paintings' ? 'картинами' : 
               activeTab === 'workshops' ? 'мастер-классами' : 
-              activeTab === 'promocodes' ? 'промокодами' : 
-              activeTab === 'users' ? 'пользователями' : 'отчетами'
+              activeTab === 'promocodes' ? 'промокодами' : 'отчетами'
             }</CardTitle>
             
-            {(activeTab !== 'orders' && activeTab !== 'reports' && activeTab !== 'users') && (
+            {activeTab !== 'orders' && activeTab !== 'reports' && (
               <Button onClick={() => handleOpenModal('create')}>
                 <Plus className="mr-2 h-4 w-4" />
                 Добавить {
@@ -614,11 +578,6 @@ const AdminPanelPage = () => {
           {/* Reports Tab */}
           {activeTab === 'reports' && (
             <ReportsSection />
-          )}
-
-          {/* Users Tab */}
-          {activeTab === 'users' && (
-            <UserManagement token={token} />
           )}
         
           {/* Orders Tab */}
@@ -699,7 +658,6 @@ const AdminPanelPage = () => {
                   <TableRow>
                     <TableHead>Изображение</TableHead>
                     <TableHead>Название</TableHead>
-                    <TableHead>Автор</TableHead>
                     <TableHead>Категория</TableHead>
                     <TableHead>Цена</TableHead>
                     <TableHead>Наличие</TableHead>
@@ -709,26 +667,21 @@ const AdminPanelPage = () => {
                 <TableBody>
                   {paintings.isLoading ? (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center py-8">Загрузка...</TableCell>
+                      <TableCell colSpan={6} className="text-center py-8">Загрузка...</TableCell>
                     </TableRow>
                   ) : paintings.data?.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center py-8">Нет картин</TableCell>
+                      <TableCell colSpan={6} className="text-center py-8">Нет картин</TableCell>
                     </TableRow>
                   ) : (
                     paintings.data?.map((painting: Painting) => (
                       <TableRow key={painting._id}>
                         <TableCell>
                           <div className="h-12 w-12 rounded overflow-hidden">
-                            <img 
-                              src={painting.image.includes('http') ? painting.image : `${import.meta.env.VITE_API_URL}${painting.image}`}
-                              alt={painting.title} 
-                              className="h-full w-full object-cover" 
-                            />
+                            <img src={painting.image} alt={painting.title} className="h-full w-full object-cover" />
                           </div>
                         </TableCell>
                         <TableCell className="font-medium">{painting.title}</TableCell>
-                        <TableCell>{getAuthorName(painting)}</TableCell>
                         <TableCell>
                           {painting.category === 'landscape' ? 'Пейзаж' : 
                            painting.category === 'abstract' ? 'Абстракция' : 'Натюрморт'}
@@ -778,7 +731,6 @@ const AdminPanelPage = () => {
                   <TableRow>
                     <TableHead>Изображение</TableHead>
                     <TableHead>Название</TableHead>
-                    <TableHead>Автор</TableHead>
                     <TableHead>Дата</TableHead>
                     <TableHead>Мест</TableHead>
                     <TableHead>Участников</TableHead>
@@ -788,26 +740,21 @@ const AdminPanelPage = () => {
                 <TableBody>
                   {workshops.isLoading ? (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center py-8">Загрузка...</TableCell>
+                      <TableCell colSpan={6} className="text-center py-8">Загрузка...</TableCell>
                     </TableRow>
                   ) : workshops.data?.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center py-8">Нет мастер-классов</TableCell>
+                      <TableCell colSpan={6} className="text-center py-8">Нет мастер-классов</TableCell>
                     </TableRow>
                   ) : (
                     workshops.data?.map((workshop: Workshop) => (
                       <TableRow key={workshop._id}>
                         <TableCell>
                           <div className="h-12 w-12 rounded overflow-hidden">
-                            <img 
-                              src={workshop.image.includes('http') ? workshop.image : `${import.meta.env.VITE_API_URL}${workshop.image}`}
-                              alt={workshop.title} 
-                              className="h-full w-full object-cover" 
-                            />
+                            <img src={workshop.image} alt={workshop.title} className="h-full w-full object-cover" />
                           </div>
                         </TableCell>
                         <TableCell className="font-medium">{workshop.title}</TableCell>
-                        <TableCell>{getAuthorName(workshop)}</TableCell>
                         <TableCell>{formatDate(workshop.date)}</TableCell>
                         <TableCell>{workshop.availableSpots}</TableCell>
                         <TableCell>
@@ -922,7 +869,7 @@ const AdminPanelPage = () => {
               }
             </DialogTitle>
             <DialogDescription>
-              Заполните все необходимые по{modalMode === 'create' ? 'ля для создания' : 'ля для обновления'}
+              Заполните все необходимые поля для {modalMode === 'create' ? 'создания' : 'обновления'}
             </DialogDescription>
           </DialogHeader>
           
@@ -947,16 +894,6 @@ const AdminPanelPage = () => {
                     value={paintingForm.description}
                     onChange={(e) => setPaintingForm({...paintingForm, description: e.target.value})}
                     required
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <label htmlFor="author" className="text-sm font-medium">Автор</label>
-                  <Input
-                    id="author"
-                    value={paintingForm.authorName}
-                    onChange={(e) => setPaintingForm({...paintingForm, authorName: e.target.value})}
-                    placeholder="Имя автора (если создаёте от имени художника)"
                   />
                 </div>
                 
@@ -1032,7 +969,7 @@ const AdminPanelPage = () => {
                   {modalMode === 'edit' && (
                     <div className="h-32 w-full rounded overflow-hidden mb-2">
                       <img 
-                        src={paintingForm.image.includes('http') ? paintingForm.image : `${import.meta.env.VITE_API_URL}${paintingForm.image}`}
+                        src={paintingForm.image} 
                         alt="Текущее изображение" 
                         className="h-full w-auto object-contain"
                       />
@@ -1069,16 +1006,6 @@ const AdminPanelPage = () => {
                     value={workshopForm.description}
                     onChange={(e) => setWorkshopForm({...workshopForm, description: e.target.value})}
                     required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label htmlFor="workshop-author" className="text-sm font-medium">Автор</label>
-                  <Input
-                    id="workshop-author"
-                    value={workshopForm.authorName}
-                    onChange={(e) => setWorkshopForm({...workshopForm, authorName: e.target.value})}
-                    placeholder="Имя автора (если создаёте от имени художника)"
                   />
                 </div>
                 
@@ -1147,7 +1074,7 @@ const AdminPanelPage = () => {
                   {modalMode === 'edit' && (
                     <div className="h-32 w-full rounded overflow-hidden mb-2">
                       <img 
-                        src={workshopForm.image.includes('http') ? workshopForm.image : `${import.meta.env.VITE_API_URL}${workshopForm.image}`} 
+                        src={workshopForm.image} 
                         alt="Текущее изображение" 
                         className="h-full w-auto object-contain"
                       />

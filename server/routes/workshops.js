@@ -5,7 +5,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const Workshop = require('../models/Workshop');
-const { auth, admin, artist, owner } = require('../middleware/auth');
+const { auth, admin } = require('../middleware/auth');
 
 // Настройка хранилища для загрузки изображений
 const storage = multer.diskStorage({
@@ -26,7 +26,7 @@ const upload = multer({ storage: storage });
 // Получить все мастер-классы
 router.get('/', async (req, res) => {
   try {
-    const workshops = await Workshop.find().populate('author', 'name');
+    const workshops = await Workshop.find();
     res.json(workshops);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -36,7 +36,7 @@ router.get('/', async (req, res) => {
 // Получить мастер-класс по ID
 router.get('/:id', async (req, res) => {
   try {
-    const workshop = await Workshop.findById(req.params.id).populate('author', 'name');
+    const workshop = await Workshop.findById(req.params.id);
     if (!workshop) {
       return res.status(404).json({ message: 'Мастер-класс не найден' });
     }
@@ -47,7 +47,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // Создать новый мастер-класс
-router.post('/', auth, artist, upload.single('image'), async (req, res) => {
+router.post('/', auth, admin, upload.single('image'), async (req, res) => {
   try {
     console.log('Received workshop data:', req.body);
     console.log('Received workshop file:', req.file);
@@ -62,9 +62,7 @@ router.post('/', auth, artist, upload.single('image'), async (req, res) => {
       ...req.body,
       image: imageUrl,
       price: Number(req.body.price),
-      availableSpots: Number(req.body.availableSpots),
-      author: req.user.id,
-      authorName: req.body.authorName || req.user.name
+      availableSpots: Number(req.body.availableSpots)
     };
     
     const workshop = new Workshop(workshopData);
@@ -78,7 +76,7 @@ router.post('/', auth, artist, upload.single('image'), async (req, res) => {
 });
 
 // Обновить мастер-класс
-router.put('/:id', auth, owner(Workshop), upload.single('image'), async (req, res) => {
+router.put('/:id', auth, admin, upload.single('image'), async (req, res) => {
   try {
     let updateData = { ...req.body };
     
@@ -120,7 +118,7 @@ router.put('/:id', auth, owner(Workshop), upload.single('image'), async (req, re
 });
 
 // Удалить мастер-класс
-router.delete('/:id', auth, owner(Workshop), async (req, res) => {
+router.delete('/:id', auth, admin, async (req, res) => {
   try {
     const workshop = await Workshop.findById(req.params.id);
     
@@ -157,7 +155,7 @@ router.post('/:id/book', auth, async (req, res) => {
     
     // Проверяем, не записан ли пользователь уже
     const alreadyRegistered = workshop.registeredParticipants.some(
-      participant => participant.userId && participant.userId.toString() === req.user.id
+      participant => participant.userId.toString() === req.user.id
     );
     
     if (alreadyRegistered) {
@@ -167,7 +165,7 @@ router.post('/:id/book', auth, async (req, res) => {
     // Записываем на мастер-класс
     workshop.registeredParticipants.push({
       userId: req.user.id,
-      name: req.body.name || req.user.name,
+      name: req.body.name,
       email: req.body.email,
       phone: req.body.phone
     });
@@ -179,7 +177,6 @@ router.post('/:id/book', auth, async (req, res) => {
     
     res.status(200).json({ message: 'Вы успешно записаны на мастер-класс' });
   } catch (error) {
-    console.error('Error booking workshop:', error);
     res.status(500).json({ message: error.message });
   }
 });

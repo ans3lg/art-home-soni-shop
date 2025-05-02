@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -18,57 +19,51 @@ import AccountPage from "./pages/AccountPage";
 import OrderHistoryPage from "./pages/OrderHistoryPage";
 import AdminPanelPage from "./pages/AdminPanelPage";
 import NotFoundPage from "./pages/NotFoundPage";
-import ArtistPanelPage from "./pages/ArtistPanelPage";
 
 const queryClient = new QueryClient();
 
-function App() {
-  return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <AuthProvider>
-          <CartProvider>
-            <BrowserRouter>
-              <Routes>
-                <Route path="/" element={<Layout />}>
-                  {/* Public Routes */}
-                  <Route index element={<Homepage />} />
-                  <Route path="/about" element={<AboutPage />} />
-                  <Route path="/paintings" element={<PaintingsPage />} />
-                  <Route path="/workshops" element={<WorkshopsPage />} />
-                  <Route path="/auth" element={<AuthPage />} />
-                  <Route path="/cart" element={<CartPage />} />
-                  <Route 
-                    path="/account" 
-                    element={<ProtectedRoute><AccountPage /></ProtectedRoute>} 
-                  />
-                  <Route 
-                    path="/order-history" 
-                    element={<ProtectedRoute><OrderHistoryPage /></ProtectedRoute>} 
-                  />
-                  <Route 
-                    path="/admin" 
-                    element={<ProtectedRoute adminOnly={true}><AdminPanelPage /></ProtectedRoute>} 
-                  />
-                  <Route 
-                    path="/artist" 
-                    element={<ProtectedRoute artistOnly={true}><ArtistPanelPage /></ProtectedRoute>} 
-                  />
-                  <Route 
-                    path="/tracking" 
-                    element={<ProtectedRoute><TrackingPage /></ProtectedRoute>} 
-                  />
-                  <Route path="*" element={<NotFoundPage />} />
+const App = () => (
+  <QueryClientProvider client={queryClient}>
+    <TooltipProvider>
+      <Toaster />
+      <Sonner />
+      <AuthProvider>
+        <CartProvider>
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<Layout />}>
+                {/* Public Routes */}
+                <Route index element={<Homepage />} />
+                <Route path="paintings" element={<PaintingsPage />} />
+                <Route path="workshops" element={<WorkshopsPage />} />
+                <Route path="tracking" element={<TrackingPage />} />
+                <Route path="about" element={<AboutPage />} />
+                
+                {/* Auth Routes */}
+                <Route element={<ProtectedRoute requiresAuth={false} />}>
+                  <Route path="auth" element={<AuthPage />} />
                 </Route>
-              </Routes>
-            </BrowserRouter>
-          </CartProvider>
-        </AuthProvider>
-      </TooltipProvider>
-    </QueryClientProvider>
-  );
-}
+                
+                {/* Protected Routes (User) */}
+                <Route element={<ProtectedRoute />}>
+                  <Route path="cart" element={<CartPage />} />
+                  <Route path="account" element={<AccountPage />} />
+                  <Route path="orders" element={<OrderHistoryPage />} />
+                </Route>
+                
+                {/* Admin Routes */}
+                <Route element={<ProtectedRoute requiresAdmin={true} />}>
+                  <Route path="admin" element={<AdminPanelPage />} />
+                </Route>
+                
+                <Route path="*" element={<NotFoundPage />} />
+              </Route>
+            </Routes>
+          </BrowserRouter>
+        </CartProvider>
+      </AuthProvider>
+    </TooltipProvider>
+  </QueryClientProvider>
+);
 
 export default App;

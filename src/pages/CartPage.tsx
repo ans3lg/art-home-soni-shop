@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,14 +37,13 @@ export default function CartPage() {
   
   const { toast } = useToast();
   const { items, updateQuantity, removeItem, getTotal, clearCart, isLoading } = useCart();
-  const { user, isAuthenticated, token } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   
   const handleUpdateQuantity = (id: string, delta: number) => {
     const item = items.find(item => item.id === id);
     if (item) {
-      const newQuantity = Math.max(1, item.quantity + delta);
-      updateQuantity(id, newQuantity);
+      updateQuantity(id, item.quantity + delta);
     }
   };
   
@@ -115,20 +115,10 @@ export default function CartPage() {
     setCheckoutDialogOpen(true);
   };
   
-  const handleSubmitOrder = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    
-    if (!isAuthenticated || !user || !token) {
-      toast({
-        title: "Требуется авторизация",
-        description: "Пожалуйста, авторизуйтесь для оформления заказа",
-        variant: "destructive"
-      });
-      navigate("/auth");
-      return;
-    }
-    
+  const handleCheckout = async () => {
     try {
+      setIsCheckingOut(true);
+      
       const { name, email, phone, address, city, postalCode, comment } = checkoutInfo;
       
       if (!name || !email || !phone || !address) {
@@ -159,7 +149,7 @@ export default function CartPage() {
       };
       
       // Создаем заказ
-      await api.createOrder(orderData, token);
+      await api.createOrder(orderData, user ? user.token : undefined);
       
       // Очищаем корзину
       await clearCart();
@@ -171,13 +161,15 @@ export default function CartPage() {
       
       setCheckoutDialogOpen(false);
       navigate('/');
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error creating order:', error);
       toast({
         title: "Ошибка",
         description: "Не удалось оформить заказ. Пожалуйста, попробуйте еще раз.",
         variant: "destructive",
       });
+    } finally {
+      setIsCheckingOut(false);
     }
   };
   
@@ -463,7 +455,7 @@ export default function CartPage() {
               Отмена
             </Button>
             <Button 
-              onClick={handleSubmitOrder}
+              onClick={handleCheckout}
               disabled={isCheckingOut}
             >
               {isCheckingOut ? "Обработка..." : "Подтвердить заказ"}

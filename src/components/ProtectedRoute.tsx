@@ -1,39 +1,41 @@
 
-import { Navigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
+import { Navigate, Outlet, useLocation } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface ProtectedRouteProps {
-  children: React.ReactNode;
-  adminOnly?: boolean;
-  artistOnly?: boolean;
+  requiresAuth?: boolean;
+  requiresAdmin?: boolean;
 }
 
-export default function ProtectedRoute({ children, adminOnly = false, artistOnly = false }: ProtectedRouteProps) {
-  const { isAuthenticated, isAdmin, isArtist, isLoading } = useAuth();
-  
-  // Показываем лоадер пока проверяем аутентификацию
+const ProtectedRoute = ({ requiresAuth = true, requiresAdmin = false }: ProtectedRouteProps) => {
+  const { isAuthenticated, isAdmin, isLoading } = useAuth();
+  const location = useLocation();
+
+  // Show loading state
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      <div className="flex justify-center items-center min-h-[50vh]">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       </div>
     );
   }
-  
-  // Проверяем аутентификацию
-  if (!isAuthenticated) {
-    return <Navigate to="/auth" />;
-  }
-  
-  // Проверяем права администратора
-  if (adminOnly && !isAdmin) {
-    return <Navigate to="/" />;
+
+  // Redirect if not authenticated
+  if (requiresAuth && !isAuthenticated) {
+    return <Navigate to="/auth" state={{ from: location }} replace />;
   }
 
-  // Проверяем права художника или администратора
-  if (artistOnly && !isArtist && !isAdmin) {
-    return <Navigate to="/" />;
+  // Redirect if not an admin but admin is required
+  if (requiresAdmin && !isAdmin) {
+    return <Navigate to="/" replace />;
   }
-  
-  return <>{children}</>;
-}
+
+  // Redirect to home if already authenticated and trying to access auth page
+  if (!requiresAuth && isAuthenticated) {
+    return <Navigate to="/" replace />;
+  }
+
+  return <Outlet />;
+};
+
+export default ProtectedRoute;

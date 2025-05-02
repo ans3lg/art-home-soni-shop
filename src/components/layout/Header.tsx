@@ -31,8 +31,6 @@ export default function Header() {
     logout();
   };
 
-  const cartItemCount = getItemCount();
-
   return (
     <header className="bg-white shadow-sm sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -69,7 +67,7 @@ export default function Header() {
                   <Button variant="ghost" size="icon" className="relative">
                     <ShoppingCart className="h-5 w-5" />
                     <span className="absolute -top-1 -right-1 bg-studio-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                      {cartItemCount}
+                      {getItemCount()}
                     </span>
                   </Button>
                 </Link>
