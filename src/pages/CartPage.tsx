@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,7 +36,7 @@ export default function CartPage() {
   
   const { toast } = useToast();
   const { items, updateQuantity, removeItem, getTotal, clearCart, isLoading } = useCart();
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, token } = useAuth();
   const navigate = useNavigate();
   
   const handleUpdateQuantity = (id: string, delta: number) => {
@@ -149,7 +148,8 @@ export default function CartPage() {
       };
       
       // Создаем заказ
-      await api.createOrder(orderData, user ? user.token : undefined);
+      const userToken = user && token ? token : undefined;
+      await api.createOrder(orderData, userToken);
       
       // Очищаем корзину
       await clearCart();

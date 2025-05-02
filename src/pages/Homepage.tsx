@@ -1,4 +1,3 @@
-
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Paintbrush, Users, Image, ShoppingCart } from "lucide-react";
@@ -8,7 +7,7 @@ import { useCart } from "@/contexts/CartContext";
 // Mock data for featured paintings
 const featuredPaintings = [
   {
-    id: 1,
+    id: "1",
     title: "Летний бриз",
     materials: "Холст, масло",
     size: "60×80 см",
@@ -16,7 +15,7 @@ const featuredPaintings = [
     image: "https://images.unsplash.com/photo-1549887552-cb1071d3e5ca"
   },
   {
-    id: 2,
+    id: "2",
     title: "Горное озеро",
     materials: "Холст, акрил",
     size: "50×70 см",
@@ -24,7 +23,7 @@ const featuredPaintings = [
     image: "https://images.unsplash.com/photo-1578301978693-85fa9c0320b9"
   },
   {
-    id: 3,
+    id: "3",
     title: "Весеннее настроение",
     materials: "Холст, масло",
     size: "40×50 см",

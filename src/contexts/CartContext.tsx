@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { api } from "@/services/api";
 import { useAuth } from "@/contexts/AuthContext";
@@ -23,6 +22,10 @@ interface CartContextType {
   removeItem: (itemId: string) => void;
   updateItemQuantity: (itemId: string, quantity: number) => void;
   clearCart: () => void;
+  getItemCount: () => number;
+  getTotal: () => number;
+  updateQuantity: (itemId: string, quantity: number) => void;
+  isLoading: boolean;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -30,7 +33,7 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 export const CartProvider = ({ children }: { children: ReactNode }) => {
   const [items, setItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const { isAuthenticated, token, user } = useAuth();
+  const { isAuthenticated, token } = useAuth();
   const { toast } = useToast();
   
   // Загрузка корзины с сервера при первоначальной загрузке
@@ -161,6 +164,21 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     }
   };
   
+  // Get item count - alias for Header component
+  const getItemCount = () => {
+    return totalItems;
+  };
+  
+  // Get total price - alias for Cart page
+  const getTotal = () => {
+    return totalPrice;
+  };
+  
+  // Alias for updateItemQuantity to match CartPage usage
+  const updateQuantity = async (itemId: string, quantity: number) => {
+    return updateItemQuantity(itemId, quantity);
+  };
+  
   // Удаляем товар из корзины
   const removeItem = async (itemId: string) => {
     try {
@@ -225,7 +243,11 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         addItem,
         removeItem,
         updateItemQuantity,
-        clearCart
+        clearCart,
+        getItemCount,
+        getTotal,
+        updateQuantity,
+        isLoading: loading
       }}
     >
       {children}
