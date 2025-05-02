@@ -1,4 +1,3 @@
-
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 interface LoginResponse {
@@ -364,7 +363,7 @@ class ApiService {
       
       return await response.json();
     } catch (error: any) {
-      throw new Error(error.message || 'Ошибка при обновлении мастер-класса');
+      throw new Error(error.message || 'Ошибка при обновлении ма��тер-класса');
     }
   }
 
@@ -411,7 +410,7 @@ class ApiService {
   // Cart
   async getCart(token: string): Promise<any> {
     try {
-      const response = await fetch(`${API_URL}/api/cart`, {
+      const response = await fetch(`${API_URL}/cart`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -429,7 +428,7 @@ class ApiService {
   
   async addToCart(item: any, token: string): Promise<any> {
     try {
-      const response = await fetch(`${API_URL}/api/cart/add`, {
+      const response = await fetch(`${API_URL}/cart`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -451,13 +450,13 @@ class ApiService {
   
   async updateCartItemQuantity(itemId: string, quantity: number, token: string): Promise<any> {
     try {
-      const response = await fetch(`${API_URL}/api/cart/update`, {
+      const response = await fetch(`${API_URL}/cart/${itemId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify({ itemId, quantity }),
+        body: JSON.stringify({ quantity }),
       });
       
       if (!response.ok) {
@@ -473,7 +472,7 @@ class ApiService {
   
   async removeFromCart(itemId: string, token: string): Promise<any> {
     try {
-      const response = await fetch(`${API_URL}/api/cart/remove/${itemId}`, {
+      const response = await fetch(`${API_URL}/cart/${itemId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -493,7 +492,7 @@ class ApiService {
   
   async clearCart(token: string): Promise<any> {
     try {
-      const response = await fetch(`${API_URL}/api/cart/clear`, {
+      const response = await fetch(`${API_URL}/cart`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,

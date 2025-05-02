@@ -42,7 +42,8 @@ export default function CartPage() {
   const handleUpdateQuantity = (id: string, delta: number) => {
     const item = items.find(item => item.id === id);
     if (item) {
-      updateQuantity(id, item.quantity + delta);
+      const newQuantity = Math.max(1, item.quantity + delta);
+      updateQuantity(id, newQuantity);
     }
   };
   
@@ -114,10 +115,20 @@ export default function CartPage() {
     setCheckoutDialogOpen(true);
   };
   
-  const handleCheckout = async () => {
+  const handleSubmitOrder = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    
+    if (!isAuthenticated || !user || !token) {
+      toast({
+        title: "Требуется авторизация",
+        description: "Пожалуйста, авторизуйтесь для оформления заказа",
+        variant: "destructive"
+      });
+      navigate("/auth");
+      return;
+    }
+    
     try {
-      setIsCheckingOut(true);
-      
       const { name, email, phone, address, city, postalCode, comment } = checkoutInfo;
       
       if (!name || !email || !phone || !address) {
@@ -148,8 +159,7 @@ export default function CartPage() {
       };
       
       // Создаем заказ
-      const userToken = user && token ? token : undefined;
-      await api.createOrder(orderData, userToken);
+      await api.createOrder(orderData, token);
       
       // Очищаем корзину
       await clearCart();
@@ -161,15 +171,13 @@ export default function CartPage() {
       
       setCheckoutDialogOpen(false);
       navigate('/');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating order:', error);
       toast({
         title: "Ошибка",
         description: "Не удалось оформить заказ. Пожалуйста, попробуйте еще раз.",
         variant: "destructive",
       });
-    } finally {
-      setIsCheckingOut(false);
     }
   };
   
@@ -455,7 +463,7 @@ export default function CartPage() {
               Отмена
             </Button>
             <Button 
-              onClick={handleCheckout}
+              onClick={handleSubmitOrder}
               disabled={isCheckingOut}
             >
               {isCheckingOut ? "Обработка..." : "Подтвердить заказ"}

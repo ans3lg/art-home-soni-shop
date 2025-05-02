@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Paintbrush, Users, Image, ShoppingCart } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { useCart } from "@/contexts/CartContext";
+import { useAuth } from "@/contexts/AuthContext";
 
 // Mock data for featured paintings
 const featuredPaintings = [
@@ -34,11 +35,23 @@ const featuredPaintings = [
 
 export default function Homepage() {
   const { addItem } = useCart();
+  const { isAuthenticated } = useAuth();
   const { toast } = useToast();
   
-  const handleAddToCart = (painting: typeof featuredPaintings[0]) => {
+  const handleAddToCart = (painting: any) => {
+    if (!isAuthenticated) {
+      toast({
+        title: "Требуется авторизация",
+        description: "Пожалуйста, авторизуйтесь для добавления товаров в корзину",
+        duration: 3000,
+      });
+      return;
+    }
+    
     addItem({
       id: painting.id,
+      productId: painting.id,
+      itemType: 'Painting',
       title: painting.title,
       price: painting.price,
       quantity: 1,
