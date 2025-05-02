@@ -15,9 +15,11 @@ interface AuthContextType {
   user: User | null;
   token: string | null;
   loading: boolean;
+  isLoading: boolean; // Added for compatibility
   error: string | null;
   isAuthenticated: boolean;
   isAdmin: boolean;
+  isArtist: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (name: string, email: string, password: string) => Promise<void>;
   logout: () => void;
@@ -34,6 +36,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   
   const isAuthenticated = !!token;
   const isAdmin = user?.role === 'admin';
+  const isArtist = user?.role === 'artist';
   
   useEffect(() => {
     const initAuth = async () => {
@@ -124,9 +127,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         user,
         token,
         loading,
+        isLoading: loading, // Added for compatibility
         error,
         isAuthenticated,
         isAdmin,
+        isArtist,
         login,
         register,
         logout,

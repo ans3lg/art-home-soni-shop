@@ -26,3 +26,38 @@ exports.admin = (req, res, next) => {
   }
   next();
 };
+
+// Artist middleware
+exports.artist = (req, res, next) => {
+  if (req.user.role !== 'artist' && req.user.role !== 'admin') {
+    return res.status(403).json({ message: 'Доступ запрещен. Требуются права художника или администратора' });
+  }
+  next();
+};
+
+// Owner middleware - checks if user owns the resource or is admin
+exports.owner = (model) => async (req, res, next) => {
+  try {
+    const resourceId = req.params.id;
+    const resource = await model.findById(resourceId);
+    
+    if (!resource) {
+      return res.status(404).json({ message: 'Ресурс не найден' });
+    }
+    
+    // Admin can edit anything
+    if (req.user.role === 'admin') {
+      return next();
+    }
+    
+    // Check if current user is the owner
+    if (resource.author && resource.author.toString() === req.user.id) {
+      return next();
+    }
+    
+    return res.status(403).json({ message: 'Доступ запрещен. Вы не являетесь автором этого ресурса' });
+  } catch (error) {
+    console.error('Owner middleware error:', error);
+    res.status(500).json({ message: error.message });
+  }
+};

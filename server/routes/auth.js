@@ -3,7 +3,7 @@ const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
-const { auth } = require('../middleware/auth');
+const { auth, admin } = require('../middleware/auth');
 
 // Регистрация пользователя
 router.post('/register', async (req, res) => {
@@ -22,7 +22,7 @@ router.post('/register', async (req, res) => {
     
     // Создаем JWT токен
     const token = jwt.sign(
-      { id: user.id, role: user.role },
+      { id: user.id, role: user.role, name: user.name },
       process.env.JWT_SECRET,
       { expiresIn: '30d' }
     );
@@ -61,7 +61,7 @@ router.post('/login', async (req, res) => {
     
     // Создаем JWT токен
     const token = jwt.sign(
-      { id: user.id, role: user.role },
+      { id: user.id, role: user.role, name: user.name },
       process.env.JWT_SECRET,
       { expiresIn: '30d' }
     );
@@ -116,6 +116,43 @@ router.put('/profile', auth, async (req, res) => {
     res.json(user);
   } catch (error) {
     console.error('Update profile error:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Получить всех пользователей (для админа)
+router.get('/users', auth, admin, async (req, res) => {
+  try {
+    const users = await User.find().select('-password');
+    res.json(users);
+  } catch (error) {
+    console.error('Get users error:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Обновить роль пользователя (для админа)
+router.put('/users/:id/role', auth, admin, async (req, res) => {
+  try {
+    const { role } = req.body;
+    
+    if (!['user', 'admin', 'artist'].includes(role)) {
+      return res.status(400).json({ message: 'Недопустимая роль' });
+    }
+    
+    const user = await User.findByIdAndUpdate(
+      req.params.id,
+      { role },
+      { new: true }
+    ).select('-password');
+    
+    if (!user) {
+      return res.status(404).json({ message: 'Пользователь не найден' });
+    }
+    
+    res.json(user);
+  } catch (error) {
+    console.error('Update user role error:', error);
     res.status(500).json({ message: error.message });
   }
 });
